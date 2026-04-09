@@ -1,0 +1,10 @@
+StreetComplete
+build
+node_modules
+
+.lock-waf*
+screenshot*.png
+test/artifacts
+
+# Only during rapid development
+test/baselines

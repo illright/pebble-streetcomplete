@@ -1,0 +1,3 @@
+- use touchscreen for moving objects
+- use voice input for leaving comments about objects
+- play fun sounds on Time 2
