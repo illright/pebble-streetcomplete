@@ -16,19 +16,28 @@ static void menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *ind
   }
 }
 
+/* Deferred from menu_select so that all window pops happen outside the
+ * MenuLayer callback.  Destroying a MenuLayer while its click handler is
+ * still on the call stack causes a use-after-free crash. */
+static void skip_deferred(void *data) {
+  (void)data;
+  s_app->has_active_quest = false;
+  s_app->arrived_at_quest = false;
+
+  /* Pop back to main_window: skip → actions → incoming.
+   * Using three individual pops instead of window_stack_pop_all avoids
+   * a firmware crash that occurs when the stack is fully emptied and
+   * then immediately re-populated. */
+  window_stack_pop(false);  /* skip window   */
+  window_stack_pop(false);  /* actions window */
+  window_stack_pop(false);  /* incoming quest */
+}
+
 static void menu_select(MenuLayer *menu_layer, MenuIndex *index, void *ctx) {
   (void)menu_layer; (void)ctx;
 
   comm_send_skip((uint8_t)index->row);
-
-  /* After skipping, clear active quest and pop back to wait for next quest.
-   * Pop all the way back to main_window (the waiting screen). */
-  s_app->has_active_quest = false;
-  s_app->arrived_at_quest = false;
-
-  /* Pop skip → actions → incoming, back to main */
-  window_stack_pop_all(true);
-  window_stack_push(s_app->main_window, false);
+  app_timer_register(0, skip_deferred, NULL);
 }
 
 static void window_load(Window *window) {

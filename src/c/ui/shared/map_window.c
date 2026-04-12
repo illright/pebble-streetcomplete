@@ -35,7 +35,125 @@ static int16_t read_i16(const uint8_t *buf, uint16_t offset) {
   return (int16_t)((uint16_t)buf[offset] | ((uint16_t)buf[offset + 1] << 8));
 }
 
-/* Draws the map layer: way polylines, reference grid, user marker, node marker. */
+/* Returns true if the given way type should be drawn in the specified pass.
+ * Pass 0 draws area features and road casings (background layer).
+ * Pass 1 draws road fills and fine line features (foreground layer). */
+static bool way_visible_in_pass(uint8_t type, int pass) {
+  if (pass == 0) {
+    return type == WAY_TYPE_GREEN || type == WAY_TYPE_WATER ||
+           type == WAY_TYPE_BUILDING || type == WAY_TYPE_ROAD ||
+           type == WAY_TYPE_MAJOR_ROAD;
+  }
+  /* pass 1 */
+  return type == WAY_TYPE_ROAD || type == WAY_TYPE_MAJOR_ROAD ||
+         type == WAY_TYPE_SERVICE || type == WAY_TYPE_PATH ||
+         type == WAY_TYPE_RAILWAY;
+}
+
+/* Applies the stroke color and width for a way type in the given rendering
+ * pass. Pass 0 draws casings (wider, darker); pass 1 draws fills (narrower). */
+static void apply_way_style(GContext *ctx, uint8_t type, int pass) {
+#ifdef PBL_COLOR
+  if (pass == 0) {
+    switch (type) {
+      case WAY_TYPE_GREEN:      graphics_context_set_stroke_color(ctx, GColorMayGreen);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_WATER:      graphics_context_set_stroke_color(ctx, GColorPictonBlue);
+                                graphics_context_set_stroke_width(ctx, 3); break;
+      case WAY_TYPE_BUILDING:   graphics_context_set_stroke_color(ctx, GColorLightGray);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_ROAD:       graphics_context_set_stroke_color(ctx, GColorWindsorTan);
+                                graphics_context_set_stroke_width(ctx, 3); break;
+      case WAY_TYPE_MAJOR_ROAD: graphics_context_set_stroke_color(ctx, GColorBulgarianRose);
+                                graphics_context_set_stroke_width(ctx, 3); break;
+      default: break;
+    }
+  } else {
+    switch (type) {
+      case WAY_TYPE_ROAD:       graphics_context_set_stroke_color(ctx, GColorWhite);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_MAJOR_ROAD: graphics_context_set_stroke_color(ctx, GColorRajah);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_SERVICE:    graphics_context_set_stroke_color(ctx, GColorWhite);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_PATH:       graphics_context_set_stroke_color(ctx, GColorWindsorTan);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      case WAY_TYPE_RAILWAY:    graphics_context_set_stroke_color(ctx, GColorDarkGray);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      default: break;
+    }
+  }
+#else
+  /* B&W platforms: differentiate only by stroke width. */
+  if (pass == 0) {
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    switch (type) {
+      case WAY_TYPE_ROAD:
+      case WAY_TYPE_MAJOR_ROAD: graphics_context_set_stroke_width(ctx, 3); break;
+      default:                  graphics_context_set_stroke_width(ctx, 1); break;
+    }
+  } else {
+    switch (type) {
+      case WAY_TYPE_ROAD:
+      case WAY_TYPE_MAJOR_ROAD: graphics_context_set_stroke_color(ctx, GColorWhite);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+      default:                  graphics_context_set_stroke_color(ctx, GColorBlack);
+                                graphics_context_set_stroke_width(ctx, 1); break;
+    }
+  }
+#endif
+}
+
+/* Iterates the packed map data buffer and draws way polylines for a single
+ * rendering pass. Skips ways whose type does not belong in the pass. */
+static void draw_ways_pass(GContext *ctx, const uint8_t *data, uint16_t len,
+                           GPoint center, int32_t mid_lat_e6, int32_t mid_lon_e6,
+                           int32_t node_lat_e6, int32_t node_lon_e6,
+                           int16_t mpp, int pass) {
+  uint8_t cur_type = WAY_TYPE_ROAD;
+  bool skip = !way_visible_in_pass(cur_type, pass);
+  bool has_prev = false;
+  GPoint prev = GPointZero;
+
+  for (uint16_t off = 0; off + 3 < len; off += 4) {
+    int16_t a = read_i16(data, off);
+    int16_t b = read_i16(data, off + 2);
+
+    /* Way type header. */
+    if (a == (int16_t)MAP_WAY_TYPE_MARKER) {
+      cur_type = (uint8_t)(b & 0xFF);
+      skip = !way_visible_in_pass(cur_type, pass);
+      has_prev = false;
+      if (!skip) {
+        apply_way_style(ctx, cur_type, pass);
+      }
+      continue;
+    }
+
+    /* Way sentinel — end of current polyline. */
+    if (a == (int16_t)MAP_WAY_SENTINEL && b == (int16_t)MAP_WAY_SENTINEL) {
+      has_prev = false;
+      continue;
+    }
+
+    if (skip) { continue; }
+
+    int32_t abs_lat_e6 = node_lat_e6 + (int32_t)a;
+    int32_t abs_lon_e6 = node_lon_e6 + (int32_t)b;
+    GPoint px = latlon_to_px(abs_lat_e6, abs_lon_e6,
+                             mid_lat_e6, mid_lon_e6, mpp);
+    GPoint screen = GPoint(center.x + px.x, center.y + px.y);
+
+    if (has_prev) {
+      graphics_draw_line(ctx, prev, screen);
+    }
+    prev = screen;
+    has_prev = true;
+  }
+}
+
+/* Draws the full map: background, way polylines (two-pass), scale bar,
+ * user marker, and node marker. */
 static void map_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
@@ -47,48 +165,24 @@ static void map_update_proc(Layer *layer, GContext *ctx) {
   int32_t mid_lat_e6 = (q->user_lat_e6 + q->node_lat_e6) / 2;
   int32_t mid_lon_e6 = (q->user_lon_e6 + q->node_lon_e6) / 2;
 
-  /* --- Background --- */
+  /* --- Background (warm sand, inspired by StreetComplete day theme) --- */
+#ifdef PBL_COLOR
+  graphics_context_set_fill_color(ctx, GColorPastelYellow);
+#else
   graphics_context_set_fill_color(ctx, GColorWhite);
+#endif
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  /* --- Draw way polylines from buffered map data --- */
+  /* --- Two-pass way rendering --- */
   if (s_app->map_data_len >= 4) {
-#ifdef PBL_COLOR
-    graphics_context_set_stroke_color(ctx, GColorDarkGray);
-#else
-    graphics_context_set_stroke_color(ctx, GColorBlack);
-#endif
-    graphics_context_set_stroke_width(ctx, 1);
-
-    uint16_t num_bytes = s_app->map_data_len;
-    const uint8_t *data = s_app->map_data;
-    bool has_prev = false;
-    GPoint prev = GPointZero;
-
-    for (uint16_t off = 0; off + 3 < num_bytes; off += 4) {
-      int16_t dlat = read_i16(data, off);
-      int16_t dlon = read_i16(data, off + 2);
-
-      /* Check for way sentinel. */
-      if (dlat == MAP_WAY_SENTINEL && dlon == MAP_WAY_SENTINEL) {
-        has_prev = false;
-        continue;
-      }
-
-      /* Convert microdegree offset → meters → pixels. The offsets are relative
-       * to the quest node, but we center the screen on the midpoint. */
-      int32_t abs_lat_e6 = q->node_lat_e6 + (int32_t)dlat;
-      int32_t abs_lon_e6 = q->node_lon_e6 + (int32_t)dlon;
-      GPoint px = latlon_to_px(abs_lat_e6, abs_lon_e6,
-                               mid_lat_e6, mid_lon_e6, mpp);
-      GPoint screen = GPoint(center.x + px.x, center.y + px.y);
-
-      if (has_prev) {
-        graphics_draw_line(ctx, prev, screen);
-      }
-      prev = screen;
-      has_prev = true;
-    }
+    /* Pass 0: area features (green, water, buildings) and road casings. */
+    draw_ways_pass(ctx, s_app->map_data, s_app->map_data_len,
+                   center, mid_lat_e6, mid_lon_e6,
+                   q->node_lat_e6, q->node_lon_e6, mpp, 0);
+    /* Pass 1: road fills, paths, railways, service roads. */
+    draw_ways_pass(ctx, s_app->map_data, s_app->map_data_len,
+                   center, mid_lat_e6, mid_lon_e6,
+                   q->node_lat_e6, q->node_lon_e6, mpp, 1);
   }
 
   /* --- Scale bar label at bottom-left --- */
@@ -116,7 +210,11 @@ static void map_update_proc(Layer *layer, GContext *ctx) {
 
   /* White background behind scale text for readability. */
   GRect text_rect = GRect(4, bounds.size.h - 26, bounds.size.w / 2, 16);
+#ifdef PBL_COLOR
+  graphics_context_set_fill_color(ctx, GColorPastelYellow);
+#else
   graphics_context_set_fill_color(ctx, GColorWhite);
+#endif
   graphics_fill_rect(ctx, text_rect, 0, GCornerNone);
   graphics_context_set_text_color(ctx, GColorBlack);
   graphics_draw_text(ctx, scale_buf,

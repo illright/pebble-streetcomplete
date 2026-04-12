@@ -16,6 +16,7 @@ var KEY_QUEST_NODE_LON_E6 = 15;
 var KEY_USER_LAT_E6      = 16;
 var KEY_USER_LON_E6      = 17;
 var KEY_MAP_DATA         = 18;
+var KEY_QUEST_INPUT_TYPE = 19;
 
 /* Command values carried in KEY_CMD. */
 var CMD_ANSWER = 2;
@@ -28,6 +29,10 @@ var CMD_RETRY_FETCH = 7;
 /* Runtime limits. */
 var SEARCH_RADIUS = 0.003;
 
+var INPUT_TYPE_YES_NO = 0;
+var INPUT_TYPE_MULTI_CHOICE = 1;
+var INPUT_TYPE_NUMERIC = 2;
+
 /* Build-time configuration: production defaults, overridable via env vars during build. */
 var config = require('../config/config.production');
 var overrides = {};
@@ -37,7 +42,7 @@ try { overrides = require('../../build/build_overrides.auto'); } catch (e) { ove
 var ARRIVAL_THRESHOLD_M =
   typeof overrides.ARRIVAL_THRESHOLD_M === 'number' && overrides.ARRIVAL_THRESHOLD_M > 0
     ? overrides.ARRIVAL_THRESHOLD_M
-    : 30;
+    : 10;
 
 /* Emulator-safe fallback coordinates (central Amsterdam). */
 var FALLBACK_LAT = 52.373;
@@ -69,6 +74,7 @@ module.exports = {
   KEY_USER_LAT_E6: KEY_USER_LAT_E6,
   KEY_USER_LON_E6: KEY_USER_LON_E6,
   KEY_MAP_DATA: KEY_MAP_DATA,
+  KEY_QUEST_INPUT_TYPE: KEY_QUEST_INPUT_TYPE,
   CMD_ANSWER: CMD_ANSWER,
   CMD_SKIP: CMD_SKIP,
   CMD_LOCATION_UPDATE: CMD_LOCATION_UPDATE,
@@ -81,4 +87,7 @@ module.exports = {
   FALLBACK_LAT: FALLBACK_LAT,
   FALLBACK_LON: FALLBACK_LON,
   OSM_BASE_URL: OSM_BASE_URL,
+  INPUT_TYPE_YES_NO: INPUT_TYPE_YES_NO,
+  INPUT_TYPE_MULTI_CHOICE: INPUT_TYPE_MULTI_CHOICE,
+  INPUT_TYPE_NUMERIC: INPUT_TYPE_NUMERIC,
 };

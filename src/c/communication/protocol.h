@@ -21,6 +21,7 @@
 #define KEY_USER_LAT_E6          16
 #define KEY_USER_LON_E6          17
 #define KEY_MAP_DATA             18
+#define KEY_QUEST_INPUT_TYPE     19
 
 /* === Commands === */
 
@@ -30,6 +31,12 @@
 #define CMD_MAP_DATA         5
 #define CMD_LOADING          6
 #define CMD_RETRY_FETCH      7
+
+/* === Quest input types === */
+
+#define INPUT_TYPE_YES_NO        0
+#define INPUT_TYPE_MULTI_CHOICE  1
+#define INPUT_TYPE_NUMERIC       2
 
 /* === Quest data limits === */
 
@@ -52,6 +59,22 @@
 /* Way separator sentinel: (0x7FFF, 0x7FFF) */
 #define MAP_WAY_SENTINEL    0x7FFF
 
+/* Way type header marker: first int16 of a 4-byte record. The second int16
+ * holds the way type enum value for all subsequent coordinates until the
+ * next sentinel or type header. */
+#define MAP_WAY_TYPE_MARKER 0x7FFE
+
+/* === Way type classification (matches JS classifyWay) === */
+
+#define WAY_TYPE_ROAD       0
+#define WAY_TYPE_MAJOR_ROAD 1
+#define WAY_TYPE_PATH       2
+#define WAY_TYPE_BUILDING   3
+#define WAY_TYPE_WATER      4
+#define WAY_TYPE_GREEN      5
+#define WAY_TYPE_RAILWAY    6
+#define WAY_TYPE_SERVICE    7
+
 /* === Quest struct === */
 
 typedef struct {
@@ -69,4 +92,21 @@ typedef struct {
   char option_labels[MAX_OPTIONS][OPTION_LABEL_LEN];
   char option_values[MAX_OPTIONS][OPTION_VALUE_LEN];
   uint8_t option_count;
+  uint8_t input_type;
 } Quest;
+
+/** Returns true if the option label is exactly "Yes" or "No". */
+static inline bool quest_option_is_yes_no(const char *label) {
+  return strcmp(label, "Yes") == 0 || strcmp(label, "No") == 0;
+}
+
+/** Counts quest answer options whose labels are not "Yes" or "No". */
+static inline uint8_t quest_extra_option_count(const Quest *q) {
+  uint8_t count = 0;
+  for (uint8_t i = 0; i < q->option_count; i++) {
+    if (!quest_option_is_yes_no(q->option_labels[i])) {
+      count++;
+    }
+  }
+  return count;
+}

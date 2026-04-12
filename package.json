@@ -6,6 +6,7 @@
     "pebble-app"
   ],
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "pebble": {
     "displayName": "pebble-streetcomplete",
     "uuid": "1da944ed-33e5-47e0-9ae2-72ca3a58b1e3",
@@ -40,7 +41,8 @@
       "QuestNodeLonE6": 15,
       "UserLatE6": 16,
       "UserLonE6": 17,
-      "MapData": 18
+      "MapData": 18,
+      "QuestInputType": 19
     },
     "resources": {
       "media": [
@@ -73,6 +75,26 @@
           "type": "png",
           "name": "ICON_RETRY",
           "file": "images/action_bar_icon_retry.png"
+        },
+        {
+          "type": "png",
+          "name": "ICON_LIST",
+          "file": "images/action_button_list.png"
+        },
+        {
+          "type": "png",
+          "name": "ICON_QUESTION",
+          "file": "images/action_bar_icon_question.png"
+        },
+        {
+          "type": "png",
+          "name": "ICON_MAP",
+          "file": "images/travel_map_indexed.png"
+        },
+        {
+          "type": "raw",
+          "name": "IMAGE_HIDING_MAP_PIN",
+          "file": "images/hiding_map_pin.pdc"
         }
       ]
     }
@@ -88,6 +110,7 @@
     "test:e2e:update:emery": "UPDATE_BASELINES=1 PEBBLE_PLATFORM=emery node --test --test-concurrency=1 test/e2e/**/*.test.js",
     "test:e2e:update:gabbro": "UPDATE_BASELINES=1 PEBBLE_PLATFORM=gabbro node --test --test-concurrency=1 test/e2e/**/*.test.js",
     "test:e2e:update": "npm run test:e2e:update:emery && npm run test:e2e:update:gabbro",
+    "generate:quests": "node tools/generate_quest_types_from_streetcomplete.js",
     "format": "prettier --write ."
   }
 }

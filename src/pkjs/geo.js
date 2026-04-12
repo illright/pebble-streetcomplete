@@ -38,6 +38,7 @@ function withDistanceAndBearing(quests, lat, lon) {
         question: q.question,
         questType: q.questType,
         options: q.options,
+        inputType: q.inputType,
         elementId: q.elementId,
         elementType: q.elementType,
         name: q.name,

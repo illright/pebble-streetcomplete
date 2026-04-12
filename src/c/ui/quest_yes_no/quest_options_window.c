@@ -5,11 +5,24 @@
 
 static AppState *s_app;
 
-/* Row 0 = "Show map", rows 1..N = quest-specific alternative answers */
+/** Returns the real option index for the nth non-Yes/No option (0-based). */
+static uint8_t nth_extra_option(const Quest *q, uint8_t n) {
+  uint8_t count = 0;
+  for (uint8_t i = 0; i < q->option_count; i++) {
+    if (!quest_option_is_yes_no(q->option_labels[i])) {
+      if (count == n) return i;
+      count++;
+    }
+  }
+  return q->option_count;
+}
+
+/* Row 0 = "Show map", rows 1..N = quest-specific alternative answers
+ * (excluding any labelled "Yes" or "No"). */
 static uint16_t menu_num_rows(MenuLayer *menu_layer, uint16_t section, void *ctx) {
   (void)menu_layer; (void)section; (void)ctx;
   Quest *q = &s_app->active_quest;
-  return 1 + (q->option_count > 2 ? q->option_count - 2 : 0);
+  return 1 + quest_extra_option_count(q);
 }
 
 static void menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *index, void *cb_ctx) {
@@ -19,8 +32,7 @@ static void menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *ind
     return;
   }
   Quest *q = &s_app->active_quest;
-  /* Options beyond the first two (Yes/No) are alternative answers */
-  uint8_t opt_idx = 2 + (index->row - 1);
+  uint8_t opt_idx = nth_extra_option(q, index->row - 1);
   if (opt_idx < q->option_count) {
     menu_cell_basic_draw(ctx, cell_layer, q->option_labels[opt_idx], NULL, NULL);
   }
@@ -33,7 +45,7 @@ static void menu_select(MenuLayer *menu_layer, MenuIndex *index, void *ctx) {
     return;
   }
   Quest *q = &s_app->active_quest;
-  uint8_t opt_idx = 2 + (index->row - 1);
+  uint8_t opt_idx = nth_extra_option(q, index->row - 1);
   if (opt_idx < q->option_count) {
     comm_send_answer(q->option_values[opt_idx]);
     thanks_window_push(s_app);

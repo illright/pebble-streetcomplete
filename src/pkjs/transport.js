@@ -26,6 +26,10 @@ function sendQuest(q, onSuccess) {
   }).join('|');
   msg[constants.KEY_QUEST_ANSWER_OPTIONS] = optStr.slice(0, 127);
 
+  if (q.inputType !== undefined) {
+    msg[constants.KEY_QUEST_INPUT_TYPE] = q.inputType;
+  }
+
   Pebble.sendAppMessage(msg,
     function() {
       console.log('[SC] Sent quest to watch: ' + q.question);
@@ -86,6 +90,20 @@ function sendLoading() {
 var WAY_SENTINEL_LO = 0xFF;
 var WAY_SENTINEL_HI = 0x7F;
 
+/* Way type header marker (0x7FFE as little-endian). */
+var WAY_TYPE_MARKER_LO = 0xFE;
+var WAY_TYPE_MARKER_HI = 0x7F;
+
+/* Way type enum — must match C WAY_TYPE_* in protocol.h. */
+var WAY_TYPE_ROAD       = 0;
+var WAY_TYPE_MAJOR_ROAD = 1;
+var WAY_TYPE_PATH       = 2;
+var WAY_TYPE_BUILDING   = 3;
+var WAY_TYPE_WATER      = 4;
+var WAY_TYPE_GREEN      = 5;
+var WAY_TYPE_RAILWAY    = 6;
+var WAY_TYPE_SERVICE    = 7;
+
 /* Maximum bytes of map data per AppMessage chunk. Keep well under the ~8KB
  * inbox limit to leave room for the command key overhead. */
 var MAP_CHUNK_MAX = 4096;
@@ -100,9 +118,31 @@ function writeInt16LE(arr, offset, val) {
 }
 
 /**
- * Packs way geometries into a compact byte buffer of (int16 lat_offset, int16 lon_offset)
- * pairs relative to centerLat/centerLon, with (0x7FFF, 0x7FFF) as way separators.
- * Returns a plain JS array of byte values.
+ * Classifies an OSM way by its tags into one of the WAY_TYPE_* categories.
+ * The classification prioritises area features, then transport infrastructure.
+ */
+function classifyWay(tags) {
+  if (tags.building) { return WAY_TYPE_BUILDING; }
+  if (tags.waterway || tags.natural === 'water') { return WAY_TYPE_WATER; }
+  if ((tags.landuse && /^(grass|forest|meadow|allotments|orchard|vineyard|recreation_ground|village_green|farmyard)$/.test(tags.landuse)) ||
+      (tags.natural && /^(wood|scrub|grassland|heath)$/.test(tags.natural)) ||
+      (tags.leisure && /^(park|garden|playground|nature_reserve|pitch|golf_course)$/.test(tags.leisure))) {
+    return WAY_TYPE_GREEN;
+  }
+  if (tags.railway) { return WAY_TYPE_RAILWAY; }
+  var hw = tags.highway;
+  if (!hw) { return WAY_TYPE_ROAD; }
+  if (/^(motorway|trunk|primary|motorway_link|trunk_link|primary_link)$/.test(hw)) { return WAY_TYPE_MAJOR_ROAD; }
+  if (/^(footway|cycleway|path|steps|pedestrian|track|bridleway)$/.test(hw)) { return WAY_TYPE_PATH; }
+  if (hw === 'service') { return WAY_TYPE_SERVICE; }
+  return WAY_TYPE_ROAD;
+}
+
+/**
+ * Packs way geometries into a compact byte buffer. Each way is preceded by a
+ * 4-byte type header (0x7FFE, way_type) followed by (int16 lat, int16 lon)
+ * coordinate pairs relative to centerLat/centerLon, terminated by a
+ * (0x7FFF, 0x7FFF) sentinel.
  */
 function packWayGeometries(wayGeometries, centerLat, centerLon) {
   var buf = [];
@@ -110,6 +150,13 @@ function packWayGeometries(wayGeometries, centerLat, centerLon) {
   var centerLonE6 = Math.round(centerLon * 1e6);
 
   for (var w = 0; w < wayGeometries.length; w++) {
+    var wt = classifyWay(wayGeometries[w].tags || {});
+
+    /* Write 4-byte type header: (0x7FFE, way_type). */
+    var hdr = buf.length;
+    buf.push(WAY_TYPE_MARKER_LO, WAY_TYPE_MARKER_HI, 0, 0);
+    writeInt16LE(buf, hdr + 2, wt);
+
     var coords = wayGeometries[w].coords;
     for (var i = 0; i < coords.length; i++) {
       var dLat = Math.round(coords[i].lat * 1e6) - centerLatE6;

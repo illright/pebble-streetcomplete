@@ -2,12 +2,15 @@
 #include "protocol.h"
 #include "../ui/quest_incoming/quest_incoming_window.h"
 #include "../ui/quest_yes_no/quest_yes_no_window.h"
+#include "../ui/quest_multi_choice/quest_multi_choice_window.h"
+#include "../ui/quest_numeric/quest_numeric_window.h"
 #include "../ui/shared/compass_window.h"
 #include "../ui/shared/loading_window.h"
 
 static AppState *s_app;
 static bool s_map_data_receiving;
 
+/** Sends the user's answer for the active quest to the phone over AppMessage. */
 void comm_send_answer(const char *answer_value) {
   Quest *q = &s_app->active_quest;
   DictionaryIterator *iter;
@@ -22,6 +25,7 @@ void comm_send_answer(const char *answer_value) {
   app_message_outbox_send();
 }
 
+/** Tells the phone to skip the active quest, including the reason (e.g. "can't say"). */
 void comm_send_skip(uint8_t skip_type) {
   Quest *q = &s_app->active_quest;
   DictionaryIterator *iter;
@@ -46,6 +50,8 @@ void comm_send_retry_fetch(void) {
   app_message_outbox_send();
 }
 
+/** Populates a Quest struct from the key-value pairs in an AppMessage dictionary.
+ *  Parses coordinates, metadata strings, answer options, and input type. */
 static void parse_quest_fields(DictionaryIterator *iter, Quest *q) {
   Tuple *t;
 
@@ -123,8 +129,14 @@ static void parse_quest_fields(DictionaryIterator *iter, Quest *q) {
       tok = pipe ? pipe + 1 : NULL;
     }
   }
+
+  /* Parse quest input type (defaults to yes/no if absent) */
+  t = dict_find(iter, KEY_QUEST_INPUT_TYPE);
+  q->input_type = t ? (uint8_t)t->value->int32 : INPUT_TYPE_YES_NO;
 }
 
+/** Resets app state and pushes the appropriate UI screen for a newly received quest.
+ *  Skips the navigation screen if the user has already arrived. */
 static void handle_new_quest(DictionaryIterator *iter) {
   Quest *q = &s_app->active_quest;
   memset(q, 0, sizeof(Quest));
@@ -142,16 +154,22 @@ static void handle_new_quest(DictionaryIterator *iter) {
   /* Remove the loading screen before showing the quest. */
   loading_window_remove(s_app);
 
-  /* Show the incoming quest window, or push yesno directly if already arrived */
+  /* Show the incoming quest window, or push the answer screen directly if already arrived */
   if (s_app->arrived_at_quest) {
-    quest_yes_no_window_push(s_app);
+    if (q->input_type == INPUT_TYPE_MULTI_CHOICE) {
+      quest_multi_choice_window_push(s_app);
+    } else if (q->input_type == INPUT_TYPE_NUMERIC) {
+      quest_numeric_window_push(s_app);
+    } else {
+      quest_yes_no_window_push(s_app);
+    }
   } else {
     quest_incoming_window_push(s_app);
   }
 }
 
-/* Appends a chunk of packed polyline data to the map data buffer. The first
- * chunk resets the buffer so stale data from a previous quest is discarded. */
+/** Appends a chunk of packed polyline data to the map data buffer. The first
+ *  chunk resets the buffer so stale data from a previous quest is discarded. */
 static void handle_map_data(DictionaryIterator *iter) {
   Tuple *t = dict_find(iter, KEY_MAP_DATA);
   if (!t || t->length == 0) { return; }
@@ -176,6 +194,8 @@ static void handle_map_data(DictionaryIterator *iter) {
   }
 }
 
+/** Updates quest distance/bearing from a location message and transitions
+ *  to the answer screen when the user arrives at the quest location. */
 static void handle_location_update(DictionaryIterator *iter) {
   if (!s_app->has_active_quest) {
     return;
@@ -198,7 +218,13 @@ static void handle_location_update(DictionaryIterator *iter) {
   Tuple *t_arrived = dict_find(iter, KEY_ARRIVED);
   if (t_arrived && t_arrived->value->int32 && !s_app->arrived_at_quest) {
     s_app->arrived_at_quest = true;
-    quest_yes_no_window_push(s_app);
+    if (q->input_type == INPUT_TYPE_MULTI_CHOICE) {
+      quest_multi_choice_window_push(s_app);
+    } else if (q->input_type == INPUT_TYPE_NUMERIC) {
+      quest_numeric_window_push(s_app);
+    } else {
+      quest_yes_no_window_push(s_app);
+    }
     return;
   }
 
@@ -214,6 +240,8 @@ static void handle_location_update(DictionaryIterator *iter) {
   compass_window_mark_dirty(s_app);
 }
 
+/** AppMessage inbox callback — dispatches by command type, falling back to
+ *  new-quest handling when a question key is present without a command. */
 static void inbox_received(DictionaryIterator *iter, void *ctx) {
   (void)ctx;
 
@@ -243,17 +271,20 @@ static void inbox_received(DictionaryIterator *iter, void *ctx) {
   }
 }
 
+/** Logs when an incoming AppMessage is dropped. */
 static void inbox_dropped(AppMessageResult reason, void *ctx) {
   (void)ctx;
   APP_LOG(APP_LOG_LEVEL_ERROR, "Inbox dropped: %d", (int)reason);
 }
 
+/** Logs when an outgoing AppMessage fails to send. */
 static void outbox_failed(DictionaryIterator *iter, AppMessageResult reason, void *ctx) {
   (void)iter;
   (void)ctx;
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox failed: %d", (int)reason);
 }
 
+/** Registers AppMessage handlers and opens the inbox/outbox at maximum size. */
 void comm_init(AppState *app) {
   s_app = app;
   app_message_register_inbox_received(inbox_received);

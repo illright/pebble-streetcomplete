@@ -27,7 +27,33 @@ function makeOsmXmlWithWheelchairQuest() {
     '  <node id="3007" lat="52.3755" lon="4.8910"/>',
     '  <node id="3008" lat="52.3755" lon="4.8930"/>',
     '  <node id="3009" lat="52.3755" lon="4.8950"/>',
-    // NS streets
+    // Building corner nodes
+    '  <node id="4001" lat="52.3738" lon="4.8915"/>',
+    '  <node id="4002" lat="52.3742" lon="4.8915"/>',
+    '  <node id="4003" lat="52.3742" lon="4.8922"/>',
+    '  <node id="4004" lat="52.3738" lon="4.8922"/>',
+    // Second building
+    '  <node id="4005" lat="52.3730" lon="4.8935"/>',
+    '  <node id="4006" lat="52.3733" lon="4.8935"/>',
+    '  <node id="4007" lat="52.3733" lon="4.8940"/>',
+    '  <node id="4008" lat="52.3730" lon="4.8940"/>',
+    // Park area nodes
+    '  <node id="4010" lat="52.3745" lon="4.8932"/>',
+    '  <node id="4011" lat="52.3753" lon="4.8932"/>',
+    '  <node id="4012" lat="52.3753" lon="4.8948"/>',
+    '  <node id="4013" lat="52.3745" lon="4.8948"/>',
+    // Canal nodes
+    '  <node id="4020" lat="52.3720" lon="4.8905"/>',
+    '  <node id="4021" lat="52.3725" lon="4.8920"/>',
+    '  <node id="4022" lat="52.3728" lon="4.8940"/>',
+    '  <node id="4023" lat="52.3730" lon="4.8955"/>',
+    // Footpath nodes
+    '  <node id="4030" lat="52.3740" lon="4.8930"/>',
+    '  <node id="4031" lat="52.3748" lon="4.8938"/>',
+    // Primary road (major) extra nodes
+    '  <node id="4040" lat="52.3735" lon="4.8900"/>',
+    '  <node id="4041" lat="52.3735" lon="4.8960"/>',
+    // NS streets (residential)
     '  <way id="5001">',
     '    <nd ref="3001"/><nd ref="3004"/><nd ref="3007"/>',
     '    <tag k="highway" v="residential"/>',
@@ -40,30 +66,50 @@ function makeOsmXmlWithWheelchairQuest() {
     '    <nd ref="3003"/><nd ref="3006"/><nd ref="3009"/>',
     '    <tag k="highway" v="residential"/>',
     '  </way>',
-    // EW streets
+    // EW streets (secondary)
     '  <way id="5004">',
     '    <nd ref="3001"/><nd ref="3002"/><nd ref="3003"/>',
-    '    <tag k="highway" v="secondary"/>',
-    '  </way>',
-    '  <way id="5005">',
-    '    <nd ref="3004"/><nd ref="3005"/><nd ref="3006"/>',
     '    <tag k="highway" v="secondary"/>',
     '  </way>',
     '  <way id="5006">',
     '    <nd ref="3007"/><nd ref="3008"/><nd ref="3009"/>',
     '    <tag k="highway" v="secondary"/>',
     '  </way>',
-    // Diagonal street for visual variety
-    '  <way id="5007">',
-    '    <nd ref="3001"/><nd ref="3005"/><nd ref="3009"/>',
-    '    <tag k="highway" v="tertiary"/>',
+    // Primary road (major, runs E-W through the middle)
+    '  <way id="5005">',
+    '    <nd ref="4040"/><nd ref="3004"/><nd ref="3005"/><nd ref="3006"/><nd ref="4041"/>',
+    '    <tag k="highway" v="primary"/>',
+    '  </way>',
+    // Buildings
+    '  <way id="6001">',
+    '    <nd ref="4001"/><nd ref="4002"/><nd ref="4003"/><nd ref="4004"/><nd ref="4001"/>',
+    '    <tag k="building" v="yes"/><tag k="building:levels" v="2"/>',
+    '  </way>',
+    '  <way id="6002">',
+    '    <nd ref="4005"/><nd ref="4006"/><nd ref="4007"/><nd ref="4008"/><nd ref="4005"/>',
+    '    <tag k="building" v="yes"/><tag k="building:levels" v="2"/>',
+    '  </way>',
+    // Park
+    '  <way id="7001">',
+    '    <nd ref="4010"/><nd ref="4011"/><nd ref="4012"/><nd ref="4013"/><nd ref="4010"/>',
+    '    <tag k="leisure" v="park"/><tag k="name" v="Test Park"/>',
+    '  </way>',
+    // Canal (waterway)
+    '  <way id="8001">',
+    '    <nd ref="4020"/><nd ref="4021"/><nd ref="4022"/><nd ref="4023"/>',
+    '    <tag k="waterway" v="canal"/><tag k="name" v="Test Canal"/>',
+    '  </way>',
+    // Footpath
+    '  <way id="9001">',
+    '    <nd ref="4030"/><nd ref="4031"/>',
+    '    <tag k="highway" v="footway"/><tag k="surface" v="paving_stones"/><tag k="segregated" v="yes"/><tag k="lane_markings" v="yes"/><tag k="lanes" v="2"/>',
     '  </way>',
     // Quest POI nodes (with tags)
-    '  <node id="2001" lat="52.373500" lon="4.892700">',
+    '  <node id="2001" lat="52.374600" lon="4.894600">',
     '    <tag k="amenity" v="cafe"/>',
     '    <tag k="name" v="Mock Cafe"/>',
     '  </node>',
-    '  <node id="2002" lat="52.373900" lon="4.893200">',
+    '  <node id="2002" lat="52.374600" lon="4.894400">',
     '    <tag k="amenity" v="restaurant"/>',
     '    <tag k="name" v="Mock Bistro"/>',
     '  </node>',
@@ -176,25 +222,18 @@ test('interaction map: arrived flows (mocked OSM)', { concurrency: 1 }, async (t
   try {
     await harness.withMockedOsm(osmXml, async () => {
       await harness.withArrivalThreshold(1500, async () => {
-        await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
+        await installAndWaitForQuest(harness, { lat: 52.374600, lon: 4.894600 });
 
-        await t.test('yes/no screen and options menu', { concurrency: 1 }, async () => {
+        await t.test('yes/no screen with map button', { concurrency: 1 }, async () => {
           const yesNo = await harness.assertScreenshot('yesno-screen');
           assert.ok(yesNo.match);
 
-          await harness.click('select');
-          await harness.delay(350);
-          const options = await harness.assertScreenshot('yesno-options');
-          assert.ok(options.match);
-
-          // Open map from the options menu ("Show map" is first item)
+          // SELECT goes directly to map (no options menu when only Yes/No options)
           await harness.click('select');
           await harness.delay(350);
           const map = await harness.assertScreenshot('map-screen-arrived');
           assert.ok(map.match);
 
-          await harness.click('back');
-          await harness.delay(250);
           await harness.click('back');
           await harness.delay(350);
         });

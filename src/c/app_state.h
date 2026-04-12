@@ -19,11 +19,18 @@ typedef struct {
   GBitmap *icon_ellipsis;
   GBitmap *icon_plus;
   GBitmap *icon_minus;
+  GBitmap *icon_list;
+  GBitmap *icon_question;
+  GBitmap *icon_map;
+
+  GDrawCommandImage *main_illustration;
 
   /* Window handles */
   Window *main_window;
   StatusBarLayer *main_status_bar;
   TextLayer *main_status_layer;
+  Layer *main_illustration_layer;
+  ActionBarLayer *main_action_bar;
 
   Window *incoming_window;
   TextLayer *incoming_question_layer;
@@ -45,6 +52,19 @@ typedef struct {
 
   Window *options_window;
   MenuLayer *options_menu_layer;
+
+  Window *multi_choice_window;
+  ActionBarLayer *multi_choice_action_bar;
+  TextLayer *multi_choice_question_layer;
+  TextLayer *multi_choice_meta_layer;
+
+  Window *multi_choice_list_window;
+  MenuLayer *multi_choice_list_menu_layer;
+
+  Window *numeric_window;
+  ActionBarLayer *numeric_action_bar;
+  TextLayer *numeric_question_layer;
+  TextLayer *numeric_meta_layer;
 
   Window *compass_window;
   Layer *compass_arrow_layer;

@@ -1,49 +1,10 @@
-var QUEST_TYPES = [
-  {
-    id: 'bench_backrest',
-    question: 'Does this bench have a backrest?',
-    filter: [
-      'nodes, ways with',
-      '  amenity = bench',
-      '  and (!area or area = no)',
-      '  and !backrest',
-      '  and !bench:type',
-      '  and (!seasonal or seasonal = no)',
-      '  and access !~ private|no'
-    ].join('\n'),
-    options: [
-      { label: 'Yes', value: 'yes' },
-      { label: 'No', value: 'no' },
-    ],
-    applyAnswer: function(value) { return { backrest: value }; },
-  },
-  {
-    id: 'bus_stop_shelter',
-    question: 'Does this bus stop have a shelter?',
-    filter: [
-      'nodes, ways, relations with',
-      '  (',
-      '    public_transport = platform',
-      '    or highway = bus_stop and public_transport != stop_position',
-      '    or highway = hitchhiking',
-      '  )',
-      '  and physically_present != no',
-      '  and access !~ no|private',
-      '  and !covered',
-      '  and location !~ underground|indoor',
-      '  and indoor != yes',
-      '  and tunnel != yes',
-      '  and (!shelter or shelter older today -4 years)'
-    ].join('\n'),
-    options: [
-      { label: 'Yes', value: 'yes' },
-      { label: 'No', value: 'no' },
-    ],
-    applyAnswer: function(value) { return { shelter: value }; },
-  },
+var generated = require('./quest_types.generated');
+
+var CUSTOM_QUEST_TYPES = [
   {
     id: 'railway_crossing_barrier',
     question: 'What barrier does this railway crossing have?',
+    inputType: 'multi_choice',
     filter: [
       'nodes with',
       '  railway ~ level_crossing|crossing',
@@ -56,28 +17,45 @@ var QUEST_TYPES = [
       { label: 'Gates', value: 'gate' },
       { label: 'No barrier', value: 'no' },
     ],
-    applyAnswer: function(value) { return { 'crossing:barrier': value }; },
   },
   {
-    id: 'wheelchair_access',
-    question: 'Is this place wheelchair-accessible?',
+    id: 'building_levels',
+    question: 'How many levels does this building have?',
+    inputType: 'numeric',
     filter: [
-      'nodes, ways with',
-      '  access !~ no|private',
-      '  and !wheelchair',
-      '  and (name or noname = yes)',
-      '  and (shop and shop !~ no|vacant',
-      '   or amenity ~ restaurant|cafe|fast_food|bar|pub|bank|pharmacy',
-      '   or amenity ~ hospital|cinema|theatre|place_of_worship|police)',
+      'ways, relations with',
+      '  building ~ yes|residential|apartments|house|detached|terrace|dormitory|semi|semidetached_house|farm|school|civic|college|university|public|hospital|kindergarten|transportation|train_station|hotel|commercial|office|retail|industrial|warehouse|cathedral|church|chapel|mosque|temple|synagogue|shrine|garage|garages|parking|fire_station|government|greenhouse',
+      '  and !building:levels',
+      '  and !man_made',
+      '  and !ruins',
     ].join('\n'),
-    options: [
-      { label: 'Yes', value: 'yes' },
-      { label: 'Limited', value: 'limited' },
-      { label: 'No', value: 'no' },
-    ],
-    applyAnswer: function(value) { return { wheelchair: value }; },
   },
 ];
+
+/**
+ * Merges generated and manual quest definitions while ensuring custom entries
+ * override generated entries by id.
+ */
+function mergeQuestTypes(customList, generatedList) {
+  var byId = {};
+
+  for (var i = 0; i < generatedList.length; i++) {
+    byId[generatedList[i].id] = generatedList[i];
+  }
+
+  for (var j = 0; j < customList.length; j++) {
+    byId[customList[j].id] = customList[j];
+  }
+
+  var ids = Object.keys(byId).sort();
+  var merged = [];
+  for (var k = 0; k < ids.length; k++) {
+    merged.push(byId[ids[k]]);
+  }
+  return merged;
+}
+
+var QUEST_TYPES = mergeQuestTypes(CUSTOM_QUEST_TYPES, generated.QUEST_TYPES);
 
 module.exports = {
   QUEST_TYPES: QUEST_TYPES,
