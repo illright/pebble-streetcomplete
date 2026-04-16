@@ -1,8 +1,10 @@
 #include "quest_multi_choice_list_window.h"
 #include "../../communication/comm.h"
 #include "../shared/thanks_window.h"
+#include "../shared/breadcrumbs.h"
 
 static AppState *s_app;
+static Layer *s_breadcrumbs;
 
 /** Returns the number of answer options available for this quest. */
 static uint16_t menu_num_rows(MenuLayer *menu_layer, uint16_t section, void *ctx) {
@@ -32,7 +34,10 @@ static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
-  s_app->multi_choice_list_menu_layer = menu_layer_create(bounds);
+  s_breadcrumbs = breadcrumbs_layer_create(bounds, 1, 0);
+  layer_add_child(root, s_breadcrumbs);
+
+  s_app->multi_choice_list_menu_layer = menu_layer_create(breadcrumbs_menu_bounds(bounds));
   menu_layer_set_callbacks(s_app->multi_choice_list_menu_layer, NULL, (MenuLayerCallbacks){
     .get_num_rows = menu_num_rows,
     .draw_row = menu_draw_row,
@@ -47,6 +52,8 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   (void)window;
+  layer_destroy(s_breadcrumbs);
+  s_breadcrumbs = NULL;
   menu_layer_destroy(s_app->multi_choice_list_menu_layer);
   s_app->multi_choice_list_menu_layer = NULL;
 }

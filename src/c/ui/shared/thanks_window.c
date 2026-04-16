@@ -9,6 +9,7 @@ static void timer_callback(void *data) {
 }
 
 static void window_load(Window *window) {
+  window_set_background_color(window, GColorMintGreen);
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
@@ -16,6 +17,7 @@ static void window_load(Window *window) {
   text_layer_set_text(s_app->thanks_layer, "Thanks!");
   text_layer_set_text_alignment(s_app->thanks_layer, GTextAlignmentCenter);
   text_layer_set_font(s_app->thanks_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  text_layer_set_background_color(s_app->thanks_layer, GColorClear);
   layer_add_child(root, text_layer_get_layer(s_app->thanks_layer));
 
   app_timer_register(4000, timer_callback, NULL);

@@ -21,12 +21,8 @@ static void content_update_proc(Layer *layer, GContext *ctx) {
   int16_t content_w = bounds.size.w - 2 * inset;
 
   static char meta_buf[64];
-  if (q->name[0] && q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%s\n%d m away", q->name, (int)q->dist_m);
-  } else if (q->name[0]) {
+  if (q->name[0]) {
     snprintf(meta_buf, sizeof(meta_buf), "%s", q->name);
-  } else if (q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%d m away", (int)q->dist_m);
   } else {
     meta_buf[0] = '\0';
   }
@@ -127,12 +123,8 @@ static void window_load(Window *window) {
   layer_add_child(root, text_layer_get_layer(s_app->yesno_question_layer));
 
   static char meta_buf[64];
-  if (q->name[0] && q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%s\n%d m away", q->name, (int)q->dist_m);
-  } else if (q->name[0]) {
+  if (q->name[0]) {
     snprintf(meta_buf, sizeof(meta_buf), "%s", q->name);
-  } else if (q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%d m away", (int)q->dist_m);
   } else {
     meta_buf[0] = '\0';
   }

@@ -36,10 +36,16 @@ def _write_build_overrides():
     osm_url = os.environ.get("PEBBLE_TEST_OSM_BASE_URL")
     threshold = os.environ.get("PEBBLE_TEST_ARRIVAL_THRESHOLD_M")
     gps_max_age = os.environ.get("PEBBLE_TEST_GPS_MAX_AGE_MS")
+    osm_auth_url = os.environ.get("PEBBLE_TEST_OSM_AUTH_BASE_URL")
+    client_id = os.environ.get("PEBBLE_TEST_CLIENT_ID")
+    osm_token = os.environ.get("PEBBLE_TEST_OSM_TOKEN")
 
     osm_val = "'{}'".format(osm_url) if osm_url else "null"
     thr_val = threshold if threshold else "null"
     gps_val = gps_max_age if gps_max_age else "null"
+    auth_val = "'{}'".format(osm_auth_url) if osm_auth_url else "null"
+    client_val = "'{}'".format(client_id) if client_id else "null"
+    token_val = "'{}'".format(osm_token) if osm_token else "null"
 
     os.makedirs("build", exist_ok=True)
     with open(os.path.join("build", "build_overrides.auto.js"), "w") as f:
@@ -48,6 +54,9 @@ def _write_build_overrides():
         f.write("  ARRIVAL_THRESHOLD_M: {},\n".format(thr_val))
         f.write("  OSM_BASE_URL: {},\n".format(osm_val))
         f.write("  GPS_MAX_AGE_MS: {},\n".format(gps_val))
+        f.write("  OSM_AUTH_BASE_URL: {},\n".format(auth_val))
+        f.write("  CLIENT_ID: {},\n".format(client_val))
+        f.write("  OSM_TOKEN: {},\n".format(token_val))
         f.write("};\n")
 
 

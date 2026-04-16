@@ -124,7 +124,7 @@ async function installAndWaitForQuest(harness, { lat, lon }) {
   await harness.stopLogs();
   harness.clearCapturedLogs();
   harness.startLogs();
-  await harness.delay(3000);
+  await harness.waitForEmulatorReady();
   await harness.install();
   await harness.setLocation(lat, lon);
   await harness.waitForLog('Sent quest to watch:', { timeoutMs: 15000 });
@@ -268,7 +268,7 @@ test('loading screen with retry (mocked OSM)', { concurrency: 1 }, async (t) => 
       await harness.stopLogs();
       harness.clearCapturedLogs();
       harness.startLogs();
-      await harness.delay(3000);
+      await harness.waitForEmulatorReady();
       await harness.install();
       await harness.setLocation(52.375, 4.895);
       // Wait for the loading signal to reach the watch

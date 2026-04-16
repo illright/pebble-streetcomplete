@@ -52,7 +52,7 @@ async function installAndWaitForQuest(harness, { lat, lon }) {
   await harness.stopLogs();
   harness.clearCapturedLogs();
   harness.startLogs();
-  await harness.delay(3000);
+  await harness.waitForEmulatorReady();
   await harness.install();
   await harness.setLocation(lat, lon);
   await harness.waitForLog('Sent quest to watch:', { timeoutMs: 15000 });

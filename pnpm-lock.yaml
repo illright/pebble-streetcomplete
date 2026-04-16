@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@rebble/clay':
+        specifier: ^1.0.8
+        version: 1.0.8
     devDependencies:
       '@blazediff/core-native':
         specifier: ^4.2.0
@@ -56,6 +60,9 @@ packages:
   '@blazediff/core-native@4.2.0':
     resolution: {integrity: sha512-G4i08d1LEcSlx4oDaroEYWS39xosXcS7thLZKLwirmYEX9huFSw5TFWLcwrmy/5VeRdvyeoNcwqnOBJyXJrYpg==}
 
+  '@rebble/clay@1.0.8':
+    resolution: {integrity: sha512-nLZes039sniW1Qx24AXirk1EH+JXNKSX5fAiJYObPL1znt83IGLIulZvDWXvM+HCmaSnjPheYdxvspr3CZicYQ==}
+
   prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
@@ -89,5 +96,7 @@ snapshots:
       '@blazediff/core-native-linux-x64': 4.2.0
       '@blazediff/core-native-win32-arm64': 4.2.0
       '@blazediff/core-native-win32-x64': 4.2.0
+
+  '@rebble/clay@1.0.8': {}
 
   prettier@3.8.1: {}

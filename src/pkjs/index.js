@@ -4,6 +4,9 @@ var auth = require('./auth');
 var uploader = require('./uploader');
 var questFetcher = require('./quest_fetcher');
 var transport = require('./transport');
+var Clay = require('@rebble/clay');
+var clayConfig = require('./config.json');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
 /* State */
 var cachedQuests = null;   /* Raw quest candidates (with lat/lon) */
@@ -221,23 +224,15 @@ function init() {
   Pebble.addEventListener('appmessage', handleAppMessage);
 
   Pebble.addEventListener('showConfiguration', function() {
-    auth.startLogin();
+    Pebble.openURL(clay.generateUrl());
   });
 
   Pebble.addEventListener('webviewclosed', function(e) {
     if (!e || !e.response) { return; }
-    var response = decodeURIComponent(e.response);
-    console.log('[SC] Webview closed, response: ' + response.slice(0, 100));
-    var codeMatch = response.match(/code=([^&]+)/);
-    if (codeMatch) {
-      auth.exchangeCode(codeMatch[1], function(err, token) {
-        if (err) {
-          console.log('[SC] OAuth token exchange failed: ' + err);
-        } else {
-          console.log('[SC] OAuth login successful.');
-        }
-      });
-    }
+    var settings = clay.getSettings(e.response, false);
+    var username = settings.OsmUsername ? settings.OsmUsername.value : '';
+    var password = settings.OsmPassword ? settings.OsmPassword.value : '';
+    auth.setBasicCredentials(username, password);
   });
 }
 

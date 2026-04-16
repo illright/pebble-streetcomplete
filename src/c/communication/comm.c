@@ -154,6 +154,14 @@ static void handle_new_quest(DictionaryIterator *iter) {
   /* Remove the loading screen before showing the quest. */
   loading_window_remove(s_app);
 
+  /* Nudge the user so they know a quest has arrived. */
+  static const uint32_t vibe_segments[] = { 50, 100, 50 };
+  VibePattern pat = {
+    .durations = vibe_segments,
+    .num_segments = ARRAY_LENGTH(vibe_segments),
+  };
+  vibes_enqueue_custom_pattern(pat);
+
   /* Show the incoming quest window, or push the answer screen directly if already arrived */
   if (s_app->arrived_at_quest) {
     if (q->input_type == INPUT_TYPE_MULTI_CHOICE) {

@@ -1,7 +1,10 @@
 #include "quest_skip_window.h"
 #include "../../communication/comm.h"
+#include "../shared/breadcrumbs.h"
+#include "../shared/skipped_window.h"
 
 static AppState *s_app;
+static Layer *s_breadcrumbs;
 
 static uint16_t menu_num_rows(MenuLayer *menu_layer, uint16_t section, void *ctx) {
   (void)menu_layer; (void)section; (void)ctx;
@@ -21,16 +24,7 @@ static void menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *ind
  * still on the call stack causes a use-after-free crash. */
 static void skip_deferred(void *data) {
   (void)data;
-  s_app->has_active_quest = false;
-  s_app->arrived_at_quest = false;
-
-  /* Pop back to main_window: skip → actions → incoming.
-   * Using three individual pops instead of window_stack_pop_all avoids
-   * a firmware crash that occurs when the stack is fully emptied and
-   * then immediately re-populated. */
-  window_stack_pop(false);  /* skip window   */
-  window_stack_pop(false);  /* actions window */
-  window_stack_pop(false);  /* incoming quest */
+  skipped_window_push(s_app);
 }
 
 static void menu_select(MenuLayer *menu_layer, MenuIndex *index, void *ctx) {
@@ -44,7 +38,10 @@ static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
-  s_app->skip_menu_layer = menu_layer_create(bounds);
+  s_breadcrumbs = breadcrumbs_layer_create(bounds, 2, 1);
+  layer_add_child(root, s_breadcrumbs);
+
+  s_app->skip_menu_layer = menu_layer_create(breadcrumbs_menu_bounds(bounds));
   menu_layer_set_callbacks(s_app->skip_menu_layer, NULL, (MenuLayerCallbacks){
     .get_num_rows = menu_num_rows,
     .draw_row = menu_draw_row,
@@ -59,6 +56,8 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   (void)window;
+  layer_destroy(s_breadcrumbs);
+  s_breadcrumbs = NULL;
   menu_layer_destroy(s_app->skip_menu_layer);
   s_app->skip_menu_layer = NULL;
 }

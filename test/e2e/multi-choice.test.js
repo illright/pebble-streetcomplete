@@ -46,7 +46,7 @@ async function installAndWaitForQuest(harness, { lat, lon }) {
   await harness.stopLogs();
   harness.clearCapturedLogs();
   harness.startLogs();
-  await harness.delay(3000);
+  await harness.waitForEmulatorReady();
   await harness.install();
   await harness.setLocation(lat, lon);
   await harness.waitForLog('Sent quest to watch:', { timeoutMs: 15000 });
@@ -73,20 +73,19 @@ test('multi-choice quest: arrived flow (mocked OSM)', { concurrency: 1 }, async 
           assert.ok(result.match);
         });
 
-        await t.test('list button opens answer choices', { concurrency: 1 }, async () => {
-          await harness.click('up');
-          await harness.delay(350);
-          const result = await harness.assertScreenshot('multi-choice-list');
-          assert.ok(result.match);
-        });
-
+        // NOTE: No post-click screenshot before the answer flow.
+        // `pebble screenshot --vnc` taken after a button press disrupts the
+        // QEMU→pypkjs channel, preventing subsequent buttons and AppMessages
+        // from being delivered.
         await t.test('selecting an answer shows thanks screen', { concurrency: 1 }, async () => {
           harness.clearCapturedLogs();
+          await harness.click('up');
+          await harness.delay(350);
           await harness.click('select');
+          await harness.waitForLog('Answer received:', { timeoutMs: 10000 });
           await harness.delay(500);
           const thanks = await harness.assertScreenshot('multi-choice-thanks');
           assert.ok(thanks.match);
-          await harness.waitForLog('Answer received:', { timeoutMs: 10000 });
         });
       }, { skipCleanupBuild: true });
     }, { skipCleanupBuild: true });
@@ -95,7 +94,7 @@ test('multi-choice quest: arrived flow (mocked OSM)', { concurrency: 1 }, async 
   }
 });
 
-test('multi-choice quest: options menu (mocked OSM)', { concurrency: 1 }, async (t) => {
+test('multi-choice quest: visual verification (mocked OSM)', { concurrency: 1 }, async (t) => {
   const osmXml = makeOsmXmlWithRailwayCrossingQuest();
 
   try {
@@ -104,14 +103,36 @@ test('multi-choice quest: options menu (mocked OSM)', { concurrency: 1 }, async 
       await harness.withArrivalThreshold(1500, async () => {
         await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
 
-        await t.test('map button opens map screen directly', { concurrency: 1 }, async () => {
+        // Each post-click screenshot is the last action in its install cycle.
+        // `pebble screenshot --vnc` disrupts the QEMU button/message channel
+        // after a button press, so no reliable navigation can follow.
+        await t.test('list button opens answer choices', { concurrency: 1 }, async () => {
+          await harness.click('up');
+          await harness.delay(350);
+          const result = await harness.assertScreenshot('multi-choice-list');
+          assert.ok(result.match);
+        });
+      }, { skipCleanupBuild: true });
+    }, { skipCleanupBuild: true });
+  } finally {
+    await harness.killEmulator();
+  }
+});
+
+test('multi-choice quest: map view (mocked OSM)', { concurrency: 1 }, async (t) => {
+  const osmXml = makeOsmXmlWithRailwayCrossingQuest();
+
+  try {
+    await harness.cleanArtifacts();
+    await harness.withMockedOsm(osmXml, async () => {
+      await harness.withArrivalThreshold(1500, async () => {
+        await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
+
+        await t.test('map button opens map screen', { concurrency: 1 }, async () => {
           await harness.click('select');
           await harness.delay(350);
           const result = await harness.assertScreenshot('multi-choice-map');
           assert.ok(result.match);
-
-          await harness.click('back');
-          await harness.delay(250);
         });
       }, { skipCleanupBuild: true });
     }, { skipCleanupBuild: true });

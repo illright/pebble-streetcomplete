@@ -1,0 +1,40 @@
+[
+  {
+    "type": "heading",
+    "defaultValue": "StreetComplete for Pebble"
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "OpenStreetMap Account"
+      },
+      {
+        "type": "text",
+        "defaultValue": "<strong>⚠️ Security notice:</strong> This app currently sends your OSM credentials directly. This is a temporary measure — a companion app with proper OAuth will replace this in the future. <br><br>We recommend <a href='https://www.openstreetmap.org/user/new'>creating a dedicated OSM account</a> for use with this app to avoid exposing your main account's password."
+      },
+      {
+        "type": "input",
+        "messageKey": "OsmUsername",
+        "label": "OSM Username",
+        "attributes": {
+          "placeholder": "your-username"
+        }
+      },
+      {
+        "type": "input",
+        "messageKey": "OsmPassword",
+        "label": "OSM Password",
+        "attributes": {
+          "placeholder": "your-password",
+          "type": "password"
+        }
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save"
+  }
+]

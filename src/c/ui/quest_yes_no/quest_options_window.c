@@ -2,8 +2,10 @@
 #include "../../communication/comm.h"
 #include "../shared/map_window.h"
 #include "../shared/thanks_window.h"
+#include "../shared/breadcrumbs.h"
 
 static AppState *s_app;
+static Layer *s_breadcrumbs;
 
 /** Returns the real option index for the nth non-Yes/No option (0-based). */
 static uint8_t nth_extra_option(const Quest *q, uint8_t n) {
@@ -56,7 +58,10 @@ static void window_load(Window *window) {
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
-  s_app->options_menu_layer = menu_layer_create(bounds);
+  s_breadcrumbs = breadcrumbs_layer_create(bounds, 1, 0);
+  layer_add_child(root, s_breadcrumbs);
+
+  s_app->options_menu_layer = menu_layer_create(breadcrumbs_menu_bounds(bounds));
   menu_layer_set_callbacks(s_app->options_menu_layer, NULL, (MenuLayerCallbacks){
     .get_num_rows = menu_num_rows,
     .draw_row = menu_draw_row,
@@ -71,6 +76,8 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   (void)window;
+  layer_destroy(s_breadcrumbs);
+  s_breadcrumbs = NULL;
   menu_layer_destroy(s_app->options_menu_layer);
   s_app->options_menu_layer = NULL;
 }

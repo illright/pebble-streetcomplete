@@ -15,15 +15,20 @@ static void click_config_provider(void *ctx) {
 }
 
 static void window_load(Window *window) {
+  window_set_background_color(window, GColorMintGreen);
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
   /* Status bar at the top */
   s_app->loading_status_bar = status_bar_layer_create();
+  status_bar_layer_set_colors(s_app->loading_status_bar, GColorClear, GColorBlack);
   layer_add_child(root, status_bar_layer_get_layer(s_app->loading_status_bar));
 
   /* Action bar on the right with retry icon on SELECT */
   s_app->loading_action_bar = action_bar_layer_create();
+#ifdef PBL_COLOR
+  action_bar_layer_set_background_color(s_app->loading_action_bar, GColorIslamicGreen);
+#endif
   action_bar_layer_set_click_config_provider(s_app->loading_action_bar,
                                              click_config_provider);
   action_bar_layer_set_icon(s_app->loading_action_bar, BUTTON_ID_SELECT,
@@ -41,6 +46,7 @@ static void window_load(Window *window) {
   text_layer_set_text_alignment(s_app->loading_text_layer, GTextAlignmentCenter);
   text_layer_set_font(s_app->loading_text_layer,
                       fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_background_color(s_app->loading_text_layer, GColorClear);
   layer_add_child(root, text_layer_get_layer(s_app->loading_text_layer));
 }
 

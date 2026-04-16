@@ -2,6 +2,16 @@ var filter = require('./filter');
 var questTypes = require('./quest_types');
 var constants = require('./constants');
 
+/** Builds a display string from addr:* tags, or returns null if none are present. */
+function formatAddress(tags) {
+  var street = tags['addr:street'];
+  var house = tags['addr:housenumber'];
+  if (street && house) { return street + ' ' + house; }
+  if (street) { return street; }
+  if (house) { return house; }
+  return null;
+}
+
 /**
  * Projects matched OSM elements into compact quest records used by watch transport.
  */
@@ -29,7 +39,7 @@ function findQuests(elements) {
           elementType: el.type,
           lat: el.lat || 0,
           lon: el.lon || 0,
-          name: el.tags.name || el.tags.ref || null,
+          name: el.tags.name || el.tags.ref || formatAddress(el.tags),
         });
       }
     }

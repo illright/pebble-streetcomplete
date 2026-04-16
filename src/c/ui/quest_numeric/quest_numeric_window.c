@@ -24,12 +24,8 @@ static void content_update_proc(Layer *layer, GContext *ctx) {
   int16_t content_w = bounds.size.w - 2 * inset;
 
   static char meta_buf[64];
-  if (q->name[0] && q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%s\n%d m away", q->name, (int)q->dist_m);
-  } else if (q->name[0]) {
+  if (q->name[0]) {
     snprintf(meta_buf, sizeof(meta_buf), "%s", q->name);
-  } else if (q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%d m away", (int)q->dist_m);
   } else {
     meta_buf[0] = '\0';
   }
@@ -243,14 +239,11 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_number_layer, number_layer_update_proc);
   layer_add_child(root, s_number_layer);
 
-  /* Build the metadata string */
+  /* Build the metadata string — only show name, not distance, since the user
+   * has already arrived at the quest location. */
   static char meta_buf[64];
-  if (q->name[0] && q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%s\n%d m away", q->name, (int)q->dist_m);
-  } else if (q->name[0]) {
+  if (q->name[0]) {
     snprintf(meta_buf, sizeof(meta_buf), "%s", q->name);
-  } else if (q->dist_m > 0) {
-    snprintf(meta_buf, sizeof(meta_buf), "%d m away", (int)q->dist_m);
   } else {
     meta_buf[0] = '\0';
   }

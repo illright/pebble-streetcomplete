@@ -3,14 +3,30 @@
 #include "app_state.h"
 #include "communication/comm.h"
 #include "ui/quest_incoming/quest_incoming_window.h"
+#include "ui/quest_yes_no/quest_yes_no_window.h"
+#include "ui/quest_multi_choice/quest_multi_choice_window.h"
+#include "ui/quest_numeric/quest_numeric_window.h"
 
 static AppState s_app;
 
-/** Re-opens the last exited quest from the waiting screen action bar. */
+/** Re-opens the last exited quest from the waiting screen action bar.
+ *  If the user has already arrived at the quest location, pushes the answer
+ *  screen directly instead of the incoming navigation screen. */
 static void main_select_click(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer;
   (void)ctx;
-  quest_incoming_window_push(&s_app);
+  if (s_app.arrived_at_quest) {
+    Quest *q = &s_app.active_quest;
+    if (q->input_type == INPUT_TYPE_MULTI_CHOICE) {
+      quest_multi_choice_window_push(&s_app);
+    } else if (q->input_type == INPUT_TYPE_NUMERIC) {
+      quest_numeric_window_push(&s_app);
+    } else {
+      quest_yes_no_window_push(&s_app);
+    }
+  } else {
+    quest_incoming_window_push(&s_app);
+  }
 }
 
 static void main_click_config(void *ctx) {
@@ -28,6 +44,9 @@ static void main_window_appear(Window *window) {
   GRect bounds = layer_get_bounds(root);
 
   s_app.main_action_bar = action_bar_layer_create();
+#ifdef PBL_COLOR
+  action_bar_layer_set_background_color(s_app.main_action_bar, GColorIslamicGreen);
+#endif
   action_bar_layer_set_click_config_provider(s_app.main_action_bar, main_click_config);
   action_bar_layer_set_icon(s_app.main_action_bar, BUTTON_ID_SELECT, s_app.icon_question);
   action_bar_layer_add_to_window(s_app.main_action_bar, window);
@@ -161,6 +180,7 @@ static void init(void) {
   s_app.icon_question = gbitmap_create_with_resource(RESOURCE_ID_ICON_QUESTION);
   s_app.icon_map = gbitmap_create_with_resource(RESOURCE_ID_ICON_MAP);
   s_app.main_illustration = gdraw_command_image_create_with_resource(RESOURCE_ID_IMAGE_HIDING_MAP_PIN);
+  s_app.compass_arrow = gdraw_command_image_create_with_resource(RESOURCE_ID_IMAGE_COMPASS_ARROW);
 #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
   prv_scale_illustration(s_app.main_illustration, 3, 2);
 #endif
@@ -191,6 +211,7 @@ static void deinit(void) {
   gbitmap_destroy(s_app.icon_question);
   gbitmap_destroy(s_app.icon_map);
   gdraw_command_image_destroy(s_app.main_illustration);
+  gdraw_command_image_destroy(s_app.compass_arrow);
 }
 
 int main(void) {

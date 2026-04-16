@@ -109,6 +109,42 @@ class PebbleHarness {
     }));
   }
 
+  /**
+   * Wait for the Pebble SDK emulator state file to appear with a running QEMU PID
+   * for the current platform. Returns once the emulator is confirmed ready.
+   */
+  async waitForEmulatorReady(timeoutMs = 20000) {
+    const stateFile = path.join(os.tmpdir(), 'pb-emulator.json');
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      try {
+        const raw = await fs.readFile(stateFile, 'utf8');
+        const state = JSON.parse(raw);
+        // The state file is keyed by platform → version → info
+        const platformState = state[this.platform];
+        if (platformState) {
+          for (const ver of Object.keys(platformState)) {
+            const info = platformState[ver];
+            if (info && info.qemu && info.qemu.pid) {
+              // Verify the PID is actually alive
+              try {
+                process.kill(info.qemu.pid, 0);
+                return; // Emulator is ready
+              } catch (e) {
+                // PID not alive, keep waiting
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // File doesn't exist yet or is malformed, keep waiting
+      }
+      await this.delay(500);
+    }
+    // Don't throw — let install() proceed and handle failure
+  }
+
   startLogs() {
     if (this._logProcess) {
       return;
@@ -300,7 +336,11 @@ class PebbleHarness {
     await this.run('pkill', ['-9', '-f', 'qemu-pebble'], { timeoutMs: 5000, allowFail: true });
     await this.run('pkill', ['-9', '-f', 'pypkjs'], { timeoutMs: 5000, allowFail: true });
     await this.run('pkill', ['-9', '-f', 'websockify'], { timeoutMs: 5000, allowFail: true });
-    await this.delay(2000);
+    // Remove stale state so the next pebble install doesn't see ghost PIDs.
+    const stateFile = path.join(os.tmpdir(), 'pb-emulator.json');
+    await this.run('rm', ['-f', stateFile], { timeoutMs: 2000, allowFail: true });
+    // Wait for the kernel to release the VNC port after SIGKILL.
+    await this.delay(5000);
     this._isInstalled = false;
     this._installedEnv = null;
     this._logBuffer = '';
@@ -481,6 +521,52 @@ class PebbleHarness {
     } finally {
       this.buildEnvOverrides = prev;
       await this.stopMockOsmServer();
+      if (!options.skipCleanupBuild) {
+        await this.build();
+      }
+    }
+  }
+
+  /**
+   * Start the full mock OSM server (OAuth + changeset + map endpoints) and configure build
+   * to use it for both data API and auth. Seeds elements into the mock's in-memory state.
+   * The callback receives the mock server instance for assertions (getRecordedCalls, etc.).
+   *
+   * options.token — pre-register this token in the mock and inject it via build overrides
+   *                 so the app starts already authenticated (skipping browser-based OAuth).
+   */
+  async withMockedOsmFull(seedElements, fn, options = {}) {
+    const { createMockOsmServer } = require('../mock-osm-server');
+    const mock = createMockOsmServer();
+    const mockPort = await mock.start(0);
+    const mockUrl = `http://127.0.0.1:${mockPort}`;
+
+    if (seedElements && seedElements.length > 0) {
+      mock.seed(seedElements);
+    }
+
+    if (options.token) {
+      mock.registerToken(options.token);
+    }
+
+    const prev = { ...this.buildEnvOverrides };
+
+    try {
+      this.buildEnvOverrides = {
+        ...this.buildEnvOverrides,
+        PEBBLE_TEST_OSM_BASE_URL: mockUrl,
+        PEBBLE_TEST_OSM_AUTH_BASE_URL: mockUrl,
+        PEBBLE_TEST_GPS_MAX_AGE_MS: '0',
+        PEBBLE_TEST_CLIENT_ID: 'test-client-id',
+      };
+      if (options.token) {
+        this.buildEnvOverrides.PEBBLE_TEST_OSM_TOKEN = options.token;
+      }
+      await this.build();
+      await fn(mock);
+    } finally {
+      this.buildEnvOverrides = prev;
+      await mock.stop();
       if (!options.skipCleanupBuild) {
         await this.build();
       }

@@ -24,6 +24,7 @@ typedef struct {
   GBitmap *icon_map;
 
   GDrawCommandImage *main_illustration;
+  GDrawCommandImage *compass_arrow;
 
   /* Window handles */
   Window *main_window;
