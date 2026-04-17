@@ -1,5 +1,6 @@
 #include "quest_incoming_window.h"
 #include "quest_actions_window.h"
+#include "../../communication/comm.h"
 
 static AppState *s_app;
 
@@ -146,9 +147,20 @@ static void select_click(ClickRecognizerRef recognizer, void *ctx) {
   quest_actions_window_push(s_app);
 }
 
+/* Dismisses the active quest and tells the phone so the next quest can appear. */
+static void back_click(ClickRecognizerRef recognizer, void *ctx) {
+  (void)recognizer;
+  (void)ctx;
+  s_app->has_active_quest = false;
+  s_app->arrived_at_quest = false;
+  comm_send_dismiss();
+  window_stack_pop(true);
+}
+
 static void click_config(void *ctx) {
   (void)ctx;
   window_single_click_subscribe(BUTTON_ID_SELECT, select_click);
+  window_single_click_subscribe(BUTTON_ID_BACK, back_click);
 }
 
 static void window_load(Window *window) {

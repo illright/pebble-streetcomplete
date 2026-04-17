@@ -50,6 +50,16 @@ void comm_send_retry_fetch(void) {
   app_message_outbox_send();
 }
 
+/** Tells the phone to dismiss the active quest so the next best quest can be sent. */
+void comm_send_dismiss(void) {
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) {
+    return;
+  }
+  dict_write_uint8(iter, KEY_CMD, CMD_DISMISS);
+  app_message_outbox_send();
+}
+
 /** Populates a Quest struct from the key-value pairs in an AppMessage dictionary.
  *  Parses coordinates, metadata strings, answer options, and input type. */
 static void parse_quest_fields(DictionaryIterator *iter, Quest *q) {
@@ -239,6 +249,9 @@ static void handle_location_update(DictionaryIterator *iter) {
   /* Refresh compass arrow layers if visible */
   if (s_app->incoming_arrow_layer) {
     layer_mark_dirty(s_app->incoming_arrow_layer);
+  }
+  if (s_app->map_layer) {
+    layer_mark_dirty(s_app->map_layer);
   }
   if (s_app->incoming_dist_layer) {
     static char dist_buf[20];

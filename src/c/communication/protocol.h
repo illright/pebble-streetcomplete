@@ -31,6 +31,7 @@
 #define CMD_MAP_DATA         5
 #define CMD_LOADING          6
 #define CMD_RETRY_FETCH      7
+#define CMD_DISMISS          8
 
 /* === Quest input types === */
 

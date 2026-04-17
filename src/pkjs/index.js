@@ -88,33 +88,31 @@ function onPositionUpdate(lat, lon) {
 }
 
 function evaluateAndSend(lat, lon) {
-  var best = findBestQuest(lat, lon);
-
-  if (!best) {
-    if (activeQuest) {
-      activeQuest = null;
-      transport.sendNoQuests();
-    }
+  /* If a quest is already active, keep tracking it — don't switch to a
+   * different quest mid-interaction.  A new quest will be picked up after
+   * the current one is answered, skipped, or dismissed. */
+  if (activeQuest) {
+    var dist = geo.distM(lat, lon, activeQuest.lat, activeQuest.lon);
+    var bearing = geo.bearingDeg(lat, lon, activeQuest.lat, activeQuest.lon);
+    transport.sendLocationUpdate(dist, bearing, lat, lon);
     return;
   }
 
-  if (isSameQuest(activeQuest, best)) {
-    /* Same quest — just send a location update */
-    var dist = geo.distM(lat, lon, best.lat, best.lon);
-    var bearing = geo.bearingDeg(lat, lon, best.lat, best.lon);
-    transport.sendLocationUpdate(dist, bearing, lat, lon);
-  } else {
-    /* New quest — send full quest data with user position */
-    activeQuest = best;
-    activeQuest.userLat = lat;
-    activeQuest.userLon = lon;
-    transport.sendQuest(best, function() {
-      /* After the quest message is ACKed, send map way data. */
-      if (cachedWayGeometries) {
-        transport.sendMapData(cachedWayGeometries, best.lat, best.lon);
-      }
-    });
+  var best = findBestQuest(lat, lon);
+  if (!best) {
+    return;
   }
+
+  /* No active quest — send the new best quest */
+  activeQuest = best;
+  activeQuest.userLat = lat;
+  activeQuest.userLon = lon;
+  transport.sendQuest(best, function() {
+    /* After the quest message is ACKed, send map way data. */
+    if (cachedWayGeometries) {
+      transport.sendMapData(cachedWayGeometries, best.lat, best.lon);
+    }
+  });
 }
 
 function handleAnswer(payload) {
@@ -189,6 +187,14 @@ function handleAppMessage(e) {
 
   if (cmd === constants.CMD_RETRY_FETCH) {
     handleRetryFetch();
+    return;
+  }
+
+  if (cmd === constants.CMD_DISMISS) {
+    activeQuest = null;
+    if (lastFetchLat !== null) {
+      evaluateAndSend(lastFetchLat, lastFetchLon);
+    }
     return;
   }
 }
