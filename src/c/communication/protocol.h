@@ -22,6 +22,7 @@
 #define KEY_USER_LON_E6          17
 #define KEY_MAP_DATA             18
 #define KEY_QUEST_INPUT_TYPE     19
+#define KEY_COMMENT_TEXT         21
 
 /* === Commands === */
 
@@ -32,6 +33,7 @@
 #define CMD_LOADING          6
 #define CMD_RETRY_FETCH      7
 #define CMD_DISMISS          8
+#define CMD_COMMENT          9
 
 /* === Quest input types === */
 

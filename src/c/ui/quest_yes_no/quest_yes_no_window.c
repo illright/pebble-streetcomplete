@@ -66,16 +66,20 @@ static void no_click(ClickRecognizerRef recognizer, void *ctx) {
   thanks_window_push(s_app);
 }
 
-/** Opens the map directly if that's the only extra option, otherwise opens
- *  the full options menu. */
+/** Opens the map directly if there are no extra options and no microphone,
+ *  otherwise opens the full options menu. */
 static void options_click(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer; (void)ctx;
+#ifdef PBL_MICROPHONE
+  quest_options_window_push(s_app);
+#else
   Quest *q = &s_app->active_quest;
   if (quest_extra_option_count(q) == 0) {
     map_window_push(s_app);
   } else {
     quest_options_window_push(s_app);
   }
+#endif
 }
 
 static void click_config(void *ctx) {
@@ -97,8 +101,13 @@ static void window_load(Window *window) {
 #endif
   action_bar_layer_set_icon_animated(s_app->yesno_action_bar, BUTTON_ID_UP,
                                      s_app->icon_checkmark, true);
+#ifdef PBL_MICROPHONE
+  action_bar_layer_set_icon_animated(s_app->yesno_action_bar, BUTTON_ID_SELECT,
+                                     s_app->icon_ellipsis, true);
+#else
   action_bar_layer_set_icon_animated(s_app->yesno_action_bar, BUTTON_ID_SELECT,
                                      quest_extra_option_count(q) == 0 ? s_app->icon_map : s_app->icon_ellipsis, true);
+#endif
   action_bar_layer_set_icon_animated(s_app->yesno_action_bar, BUTTON_ID_DOWN,
                                      s_app->icon_cross, true);
   action_bar_layer_set_click_config_provider(s_app->yesno_action_bar, click_config);

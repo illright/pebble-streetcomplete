@@ -141,6 +141,35 @@ function handleAnswer(payload) {
   });
 }
 
+/** Creates an OSM note at the quest location with the dictated comment text. */
+function handleComment(payload) {
+  var questType = payload[constants.KEY_QUEST_TYPE_ID];
+  var elementId = payload[constants.KEY_QUEST_ELEMENT_ID];
+  var elementType = payload[constants.KEY_QUEST_ELEMENT_TYPE];
+  var commentText = payload[constants.KEY_COMMENT_TEXT];
+
+  console.log('[SC] Comment received: ' + questType + ' ' + elementType + '/' + elementId + ' -> ' + commentText);
+
+  var quest = activeQuest;
+  activeQuest = null;
+
+  if (!quest) {
+    console.log('[SC] No active quest for comment.');
+    return;
+  }
+
+  var lat = quest.lat;
+  var lon = quest.lon;
+
+  uploader.submitNote(lat, lon, questType, elementType, elementId, commentText, function(err) {
+    if (err) {
+      console.log('[SC] Note creation failed: ' + err);
+    } else {
+      console.log('[SC] Note created for: ' + elementType + '/' + elementId);
+    }
+  });
+}
+
 function handleSkip(payload) {
   var skipType = payload[constants.KEY_SKIP_TYPE];
   var questType = payload[constants.KEY_QUEST_TYPE_ID];
@@ -177,6 +206,11 @@ function handleAppMessage(e) {
 
   if (cmd === constants.CMD_ANSWER) {
     handleAnswer(payload);
+    return;
+  }
+
+  if (cmd === constants.CMD_COMMENT) {
+    handleComment(payload);
     return;
   }
 

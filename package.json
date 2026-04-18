@@ -47,7 +47,8 @@
       "UserLonE6": 17,
       "MapData": 18,
       "QuestInputType": 19,
-      "OsmToken": 20
+      "OsmToken": 20,
+      "CommentText": 21
     },
     "resources": {
       "media": [

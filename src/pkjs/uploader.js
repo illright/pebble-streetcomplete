@@ -165,6 +165,32 @@ function submitAnswer(questType, elementType, elementId, answer, callback) {
   });
 }
 
+/**
+ * Create an OSM note at the given location with the comment text.
+ * Uses the notes/create endpoint which does not require a changeset.
+ */
+function submitNote(lat, lon, questType, elementType, elementId, commentText, callback) {
+  if (!auth.isLoggedIn()) {
+    console.log('[SC] Not logged in — note not submitted.');
+    callback('not logged in');
+    return;
+  }
+
+  var body = 'Quest: ' + questType + ' (' + elementType + '/' + elementId + ')\n' + commentText;
+  var path = '/api/0.6/notes.json?lat=' + lat + '&lon=' + lon
+    + '&text=' + encodeURIComponent(body);
+
+  console.log('[SC] Creating OSM note at ' + lat + ',' + lon);
+
+  osmApi.apiRequest('POST', path, null, function(err, responseBody, status) {
+    if (err) { callback('note creation failed: ' + err); return; }
+    if (status !== 200) { callback('note creation failed (' + status + ')'); return; }
+    console.log('[SC] OSM note created successfully.');
+    callback(null);
+  });
+}
+
 module.exports = {
   submitAnswer: submitAnswer,
+  submitNote: submitNote,
 };

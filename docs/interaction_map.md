@@ -21,7 +21,7 @@ flowchart TD
     QuestOfSomeKind -->|"yes/no"| YesNoQuest
 
     YesNoQuest["Yes/no quest with action bar: no, question, yes"]
-    YesNoQuestOptions["Clarifying options for a yes/no quest: show map, [quest-specific alternative answers]"]
+    YesNoQuestOptions["Clarifying options for a yes/no quest: show map, [quest-specific alternative answers], leave a comment (microphone platforms only)"]
     Thanks["Thanks for answering! [exits the app after a short delay]"]
 
     YesNoQuest -->|"Middle (question icon)"| YesNoQuestOptions

@@ -25,6 +25,22 @@ void comm_send_answer(const char *answer_value) {
   app_message_outbox_send();
 }
 
+/** Sends a voice-dictated comment for the active quest to the phone, to be
+ *  created as an OSM note at the quest location. */
+void comm_send_comment(const char *comment_text) {
+  Quest *q = &s_app->active_quest;
+  DictionaryIterator *iter;
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK) {
+    return;
+  }
+  dict_write_uint8(iter, KEY_CMD, CMD_COMMENT);
+  dict_write_cstring(iter, KEY_QUEST_TYPE_ID, q->quest_type_id);
+  dict_write_cstring(iter, KEY_QUEST_ELEMENT_ID, q->element_id);
+  dict_write_cstring(iter, KEY_QUEST_ELEMENT_TYPE, q->element_type);
+  dict_write_cstring(iter, KEY_COMMENT_TEXT, comment_text);
+  app_message_outbox_send();
+}
+
 /** Tells the phone to skip the active quest, including the reason (e.g. "can't say"). */
 void comm_send_skip(uint8_t skip_type) {
   Quest *q = &s_app->active_quest;

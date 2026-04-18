@@ -56,11 +56,15 @@ static void list_click(ClickRecognizerRef recognizer, void *ctx) {
   quest_multi_choice_list_window_push(s_app);
 }
 
-/** Opens the map screen directly (multi-choice always has map as the only
- *  extra option). */
+/** Opens the map screen directly on platforms without microphone, or the
+ *  options menu (which includes map + leave a comment) on platforms with one. */
 static void options_click(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer; (void)ctx;
+#ifdef PBL_MICROPHONE
+  quest_options_window_push(s_app);
+#else
   map_window_push(s_app);
+#endif
 }
 
 static void click_config(void *ctx) {
@@ -80,8 +84,13 @@ static void window_load(Window *window) {
 #endif
   action_bar_layer_set_icon_animated(s_app->multi_choice_action_bar, BUTTON_ID_UP,
                                      s_app->icon_list, true);
+#ifdef PBL_MICROPHONE
+  action_bar_layer_set_icon_animated(s_app->multi_choice_action_bar, BUTTON_ID_SELECT,
+                                     s_app->icon_ellipsis, true);
+#else
   action_bar_layer_set_icon_animated(s_app->multi_choice_action_bar, BUTTON_ID_SELECT,
                                      s_app->icon_map, true);
+#endif
   action_bar_layer_set_click_config_provider(s_app->multi_choice_action_bar, click_config);
   action_bar_layer_add_to_window(s_app->multi_choice_action_bar, window);
 
