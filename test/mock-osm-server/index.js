@@ -185,25 +185,6 @@ function createMockOsmServer() {
       return;
     }
 
-    // --- OAuth 2.0 Token Exchange ---
-    if (method === 'POST' && pathname === '/oauth2/token') {
-      const params = parseFormBody(body);
-      if (params.grant_type !== 'authorization_code') {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ error: 'unsupported_grant_type' }));
-        return;
-      }
-      const result = state.exchangeAuthCode(params.code, params.client_id);
-      if (!result) {
-        res.statusCode = 400;
-        res.end(JSON.stringify({ error: 'invalid_grant', error_description: 'Invalid authorization code' }));
-        return;
-      }
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify(result));
-      return;
-    }
-
     // --- User Details ---
     if (method === 'GET' && pathname === '/api/0.6/user/details') {
       const user = state.validateToken(req.headers['authorization']);

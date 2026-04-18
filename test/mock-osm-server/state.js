@@ -9,7 +9,7 @@ function createState() {
     changesets: {},    // changesetId → { id, open, uid, tags, changes: [] }
     nextChangesetId: 1,
     nextElementId: 100000,
-    authCodes: {},     // code → { clientId, createdAt }
+    authCodes: {},     // code → { clientId, createdAt }  (kept for possible future use)
     tokens: {},        // token → { uid, displayName, scopes }
     recordedCalls: [], // { method, path, headers, body }
     nextError: null,   // { pathPattern, statusCode, body }
@@ -212,8 +212,6 @@ function createState() {
 
   return {
     seed: seed,
-    issueAuthCode: issueAuthCode,
-    exchangeAuthCode: exchangeAuthCode,
     registerToken: registerToken,
     validateToken: validateToken,
     getElement: getElement,

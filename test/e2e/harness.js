@@ -555,9 +555,7 @@ class PebbleHarness {
       this.buildEnvOverrides = {
         ...this.buildEnvOverrides,
         PEBBLE_TEST_OSM_BASE_URL: mockUrl,
-        PEBBLE_TEST_OSM_AUTH_BASE_URL: mockUrl,
         PEBBLE_TEST_GPS_MAX_AGE_MS: '0',
-        PEBBLE_TEST_CLIENT_ID: 'test-client-id',
       };
       if (options.token) {
         this.buildEnvOverrides.PEBBLE_TEST_OSM_TOKEN = options.token;

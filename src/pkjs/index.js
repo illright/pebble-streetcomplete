@@ -236,9 +236,8 @@ function init() {
   Pebble.addEventListener('webviewclosed', function(e) {
     if (!e || !e.response) { return; }
     var settings = clay.getSettings(e.response, false);
-    var username = settings.OsmUsername ? settings.OsmUsername.value : '';
-    var password = settings.OsmPassword ? settings.OsmPassword.value : '';
-    auth.setBasicCredentials(username, password);
+    var token = settings.OsmToken ? settings.OsmToken.value : '';
+    auth.setToken(token);
   });
 }
 
