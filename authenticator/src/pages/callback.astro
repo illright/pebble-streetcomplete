@@ -90,15 +90,13 @@
         }
 
         if (!code) {
-          statusEl.innerHTML =
-            '<span class="error">No authorization code received.</span><br><br><a href="/">Try again</a>';
+          statusEl.innerHTML = `<span class="error">No authorization code received.</span><br><br><a href="${originalHref}">Try again</a>`;
           return;
         }
 
-        const verifier = sessionStorage.getItem("pkce_verifier");
+        const verifier = localStorage.getItem("pkce_verifier");
         if (!verifier) {
-          statusEl.innerHTML =
-            '<span class="error">Missing PKCE verifier. Please start the login again.</span><br><br><a href="/">Try again</a>';
+          statusEl.innerHTML = `<span class="error">Missing PKCE verifier. Please start the login again.</span><br><br><a href="${originalHref}">Try again</a>`;
           return;
         }
 
@@ -126,14 +124,14 @@
 
           const data = await resp.json();
           localStorage.setItem("osm_token", data.access_token);
-          sessionStorage.removeItem("pkce_verifier");
+          localStorage.removeItem("pkce_verifier");
 
-          window.location.href = originalHref;
+          window.location.href = removeSearchParams(originalHref).replace("/callback", "/");
         } catch (err) {
           statusEl.innerHTML =
             '<span class="error">' +
             err.message +
-            '</span><br><br><a href="/">Try again</a>';
+            `</span><br><br><a href="${originalHref}">Try again</a>`;
         }
       }
 
