@@ -59,10 +59,9 @@
 
     <script is:inline>
       const originalHref = window.location.href;
-      const originalUrl = window.location.origin + originalHref;
       const CLIENT_ID = "xCeZQKGt8LWbTaBETiebCXcm8iXT8hBYA1otREqCjtA";
       const REDIRECT_URI = (
-        originalUrl.replace(/\/$/, "") + "/callback"
+        originalHref.replace(/\/$/, "") + "/callback"
       ).replace("http://", "https://");
       const TOKEN_URL = "https://www.openstreetmap.org/oauth2/token";
 
