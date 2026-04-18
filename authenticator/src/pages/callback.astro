@@ -61,11 +61,19 @@
       const originalHref = window.location.href;
       const CLIENT_ID = "xCeZQKGt8LWbTaBETiebCXcm8iXT8hBYA1otREqCjtA";
       const REDIRECT_URI = (
-        originalHref.replace(/\/$/, "") + "/callback"
+        originalHref.includes("/callback")
+          ? removeSearchParams(originalHref)
+          : removeSearchParams(originalHref).replace(/\/$/, "") + "/callback"
       ).replace("http://", "https://");
       const TOKEN_URL = "https://www.openstreetmap.org/oauth2/token";
 
       const statusEl = document.getElementById("status");
+
+      function removeSearchParams(url) {
+        const u = new URL(url);
+        u.search = "";
+        return u.toString();
+      }
 
       /** Exchange the authorization code for an access token using the stored PKCE verifier. */
       async function exchangeCode() {
@@ -77,7 +85,7 @@
           statusEl.innerHTML =
             '<span class="error">Authorization denied: ' +
             error +
-            '</span><br><br><a href="/">Try again</a>';
+            `</span><br><br><a href="${originalHref}">Try again</a>`;
           return;
         }
 
