@@ -131,7 +131,7 @@
 
     <script is:inline>
       const CLIENT_ID = "xCeZQKGt8LWbTaBETiebCXcm8iXT8hBYA1otREqCjtA";
-      const REDIRECT_URI = (window.location.origin + window.location.href + "/callback").replace("http://", "https://");
+      const REDIRECT_URI = (window.location.origin + window.location.href.replace(/\/$/, "") + "/callback").replace("http://", "https://");
       const AUTH_URL = "https://www.openstreetmap.org/oauth2/authorize";
       const SCOPES = "read_prefs write_api";
 
