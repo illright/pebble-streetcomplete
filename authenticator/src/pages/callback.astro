@@ -1,0 +1,132 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Pebbles on the Street — Authenticating…</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .card {
+        background: #16213e;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+        color: #aaffaa;
+      }
+      p {
+        font-size: 0.9rem;
+        color: #aaa;
+        margin-bottom: 1.2rem;
+        line-height: 1.5;
+      }
+      .error {
+        color: #ff6b6b;
+      }
+      a {
+        color: #55c57a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Pebbles on the Street</h1>
+      <p id="status">Exchanging authorization code…</p>
+    </div>
+
+    <script is:inline>
+      const CLIENT_ID = "xCeZQKGt8LWbTaBETiebCXcm8iXT8hBYA1otREqCjtA";
+      const REDIRECT_URI = (window.location.origin + "/callback").replace("http://", "https://");
+      const TOKEN_URL = "https://www.openstreetmap.org/oauth2/token";
+
+      const statusEl = document.getElementById("status");
+
+      /** Exchange the authorization code for an access token using the stored PKCE verifier. */
+      async function exchangeCode() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const error = params.get("error");
+
+        if (error) {
+          statusEl.innerHTML =
+            '<span class="error">Authorization denied: ' +
+            error +
+            '</span><br><br><a href="/">Try again</a>';
+          return;
+        }
+
+        if (!code) {
+          statusEl.innerHTML =
+            '<span class="error">No authorization code received.</span><br><br><a href="/">Try again</a>';
+          return;
+        }
+
+        const verifier = sessionStorage.getItem("pkce_verifier");
+        if (!verifier) {
+          statusEl.innerHTML =
+            '<span class="error">Missing PKCE verifier. Please start the login again.</span><br><br><a href="/">Try again</a>';
+          return;
+        }
+
+        try {
+          const body = new URLSearchParams({
+            grant_type: "authorization_code",
+            code: code,
+            client_id: CLIENT_ID,
+            redirect_uri: REDIRECT_URI,
+            code_verifier: verifier,
+          });
+
+          const resp = await fetch(TOKEN_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString(),
+          });
+
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(
+              "Token exchange failed (" + resp.status + "): " + text,
+            );
+          }
+
+          const data = await resp.json();
+          localStorage.setItem("osm_token", data.access_token);
+          sessionStorage.removeItem("pkce_verifier");
+
+          window.location.href = "/";
+        } catch (err) {
+          statusEl.innerHTML =
+            '<span class="error">' +
+            err.message +
+            '</span><br><br><a href="/">Try again</a>';
+        }
+      }
+
+      exchangeCode();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,225 @@
+---
+
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Pebbles on the Street — Authenticate</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+      .card {
+        background: #16213e;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 420px;
+        width: 100%;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+        color: #aaffaa;
+      }
+      p {
+        font-size: 0.9rem;
+        color: #aaa;
+        margin-bottom: 1.2rem;
+        line-height: 1.5;
+      }
+      button {
+        background: #55c57a;
+        color: #1a1a2e;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #44b068;
+      }
+      button:disabled {
+        background: #555;
+        color: #999;
+        cursor: not-allowed;
+      }
+      .token-box {
+        background: #0f3460;
+        border: 1px solid #55c57a;
+        border-radius: 8px;
+        padding: 0.75rem;
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        user-select: all;
+        max-height: 6rem;
+        overflow-y: auto;
+      }
+      .hidden {
+        display: none;
+      }
+      .status {
+        font-size: 0.85rem;
+        margin-top: 0.75rem;
+        color: #aaa;
+      }
+      .status.error {
+        color: #ff6b6b;
+      }
+      .status.success {
+        color: #55c57a;
+      }
+      .logout-btn {
+        background: transparent;
+        color: #ff6b6b;
+        border: 1px solid #ff6b6b;
+        margin-top: 0.75rem;
+      }
+      .logout-btn:hover {
+        background: rgba(255, 107, 107, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Pebbles on the Street</h1>
+      <p>
+        Authenticate with OpenStreetMap to allow the Pebble app to edit the map
+        on your behalf.
+      </p>
+
+      <!-- Login view -->
+      <div id="login-view">
+        <button id="login-btn">Sign in with OpenStreetMap</button>
+        <div id="login-status" class="status hidden"></div>
+      </div>
+
+      <!-- Authenticated view -->
+      <div id="auth-view" class="hidden">
+        <p>Copy this token and paste it into the Pebble app settings.</p>
+        <div id="token-display" class="token-box"></div>
+        <button id="copy-btn">Copy Token</button>
+        <div id="copy-status" class="status hidden"></div>
+        <button id="logout-btn" class="logout-btn">Log out</button>
+      </div>
+    </div>
+
+    <script is:inline>
+      const CLIENT_ID = "xCeZQKGt8LWbTaBETiebCXcm8iXT8hBYA1otREqCjtA";
+      const REDIRECT_URI = (window.location.origin + "/callback").replace("http://", "https://");
+      const AUTH_URL = "https://www.openstreetmap.org/oauth2/authorize";
+      const SCOPES = "read_prefs write_api";
+
+      const loginView = document.getElementById("login-view");
+      const authView = document.getElementById("auth-view");
+      const loginBtn = document.getElementById("login-btn");
+      const loginStatus = document.getElementById("login-status");
+      const tokenDisplay = document.getElementById("token-display");
+      const copyBtn = document.getElementById("copy-btn");
+      const copyStatus = document.getElementById("copy-status");
+      const logoutBtn = document.getElementById("logout-btn");
+
+      /** Generate a random string suitable for a PKCE code verifier. */
+      function generateCodeVerifier() {
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        return btoa(String.fromCharCode(...array))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      /** Derive a SHA-256 code challenge from a code verifier. */
+      async function generateCodeChallenge(verifier) {
+        const data = new TextEncoder().encode(verifier);
+        const digest = await crypto.subtle.digest("SHA-256", data);
+        return btoa(String.fromCharCode(...new Uint8Array(digest)))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      /** Show the appropriate view based on whether a token is stored. */
+      function updateView() {
+        const token = localStorage.getItem("osm_token");
+        if (token) {
+          loginView.classList.add("hidden");
+          authView.classList.remove("hidden");
+          tokenDisplay.textContent = token;
+        } else {
+          loginView.classList.remove("hidden");
+          authView.classList.add("hidden");
+        }
+      }
+
+      /** Kick off the OAuth PKCE authorization redirect. */
+      loginBtn.addEventListener("click", async () => {
+        loginBtn.disabled = true;
+        loginStatus.classList.add("hidden");
+
+        const verifier = generateCodeVerifier();
+        const challenge = await generateCodeChallenge(verifier);
+        sessionStorage.setItem("pkce_verifier", verifier);
+
+        const params = new URLSearchParams({
+          response_type: "code",
+          client_id: CLIENT_ID,
+          redirect_uri: REDIRECT_URI,
+          scope: SCOPES,
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+        });
+
+        window.location.href = AUTH_URL + "?" + params.toString();
+      });
+
+      copyBtn.addEventListener("click", async () => {
+        const token = localStorage.getItem("osm_token");
+        if (!token) return;
+        try {
+          await navigator.clipboard.writeText(token);
+          copyStatus.textContent = "Copied!";
+          copyStatus.className = "status success";
+          copyStatus.classList.remove("hidden");
+        } catch {
+          copyStatus.textContent = "Copy failed — select the token manually.";
+          copyStatus.className = "status error";
+          copyStatus.classList.remove("hidden");
+        }
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("osm_token");
+        copyStatus.classList.add("hidden");
+        updateView();
+      });
+
+      updateView();
+    </script>
+  </body>
+</html>
