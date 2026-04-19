@@ -17,7 +17,12 @@ static void breadcrumbs_update(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, GColorBlack);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
+#ifdef PBL_ROUND
+  int16_t total_h = (int16_t)(data->depth - 1) * DOT_SPACING;
+  int16_t top_y = (bounds.size.h - total_h) / 2;
+#else
   int16_t top_y = DOT_RADIUS + 4;
+#endif
   int16_t cx = bounds.size.w / 2;
 
   for (uint8_t i = 0; i < data->depth; i++) {
