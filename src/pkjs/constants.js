@@ -47,6 +47,9 @@ var ARRIVAL_THRESHOLD_M =
     ? overrides.ARRIVAL_THRESHOLD_M
     : 10;
 
+/* Distance in meters beyond which an active quest is auto-dismissed. */
+var DISMISS_THRESHOLD_M = 500;
+
 /* Emulator-safe fallback coordinates (central Amsterdam). */
 var FALLBACK_LAT = 52.373;
 var FALLBACK_LON = 4.892;
@@ -89,6 +92,7 @@ module.exports = {
   CMD_COMMENT: CMD_COMMENT,
   SEARCH_RADIUS: SEARCH_RADIUS,
   ARRIVAL_THRESHOLD_M: ARRIVAL_THRESHOLD_M,
+  DISMISS_THRESHOLD_M: DISMISS_THRESHOLD_M,
   GPS_MAX_AGE_MS: GPS_MAX_AGE_MS,
   FALLBACK_LAT: FALLBACK_LAT,
   FALLBACK_LON: FALLBACK_LON,

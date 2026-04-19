@@ -90,12 +90,19 @@ function onPositionUpdate(lat, lon) {
 function evaluateAndSend(lat, lon) {
   /* If a quest is already active, keep tracking it — don't switch to a
    * different quest mid-interaction.  A new quest will be picked up after
-   * the current one is answered, skipped, or dismissed. */
+   * the current one is answered, skipped, or dismissed.
+   * However, if the user has moved far enough away, auto-dismiss it. */
   if (activeQuest) {
     var dist = geo.distM(lat, lon, activeQuest.lat, activeQuest.lon);
-    var bearing = geo.bearingDeg(lat, lon, activeQuest.lat, activeQuest.lon);
-    transport.sendLocationUpdate(dist, bearing, lat, lon);
-    return;
+    if (dist > constants.DISMISS_THRESHOLD_M) {
+      console.log('[SC] Auto-dismissing quest (distance ' + dist + 'm exceeds threshold).');
+      activeQuest = null;
+      /* Fall through to pick a new quest below. */
+    } else {
+      var bearing = geo.bearingDeg(lat, lon, activeQuest.lat, activeQuest.lon);
+      transport.sendLocationUpdate(dist, bearing, lat, lon);
+      return;
+    }
   }
 
   var best = findBestQuest(lat, lon);
