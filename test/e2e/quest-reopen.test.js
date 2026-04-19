@@ -76,7 +76,7 @@ test('quest reopen: back then reopen via action bar', { concurrency: 1 }, async 
   const osmXml = makeOsmXmlWithCafeQuest();
 
   try {
-    await harness.cleanArtifacts();
+
 
     await harness.withMockedOsm(osmXml, async () => {
       await installAndWaitForQuest(harness, { lat: 52.375, lon: 4.895 });

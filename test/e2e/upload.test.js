@@ -59,7 +59,7 @@ test('upload: answering a quest with auth token triggers changeset upload', { co
   const seedElements = makeSeedElements();
 
   try {
-    await harness.cleanArtifacts();
+
     await harness.withMockedOsmFull(seedElements, async (mock) => {
       await harness.withArrivalThreshold(1500, async () => {
         await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
@@ -119,7 +119,7 @@ test('upload: answering without auth token does not trigger upload', { concurren
   const seedElements = makeSeedElements();
 
   try {
-    await harness.cleanArtifacts();
+
     // No token option — app starts without auth
     await harness.withMockedOsmFull(seedElements, async (mock) => {
       await harness.withArrivalThreshold(1500, async () => {

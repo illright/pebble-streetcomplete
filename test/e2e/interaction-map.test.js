@@ -142,8 +142,6 @@ test('interaction map: non-arrived flows (mocked OSM)', { concurrency: 1 }, asyn
   const osmXml = makeOsmXmlWithWheelchairQuest();
 
   try {
-    await harness.cleanArtifacts();
-
     await harness.withMockedOsm(osmXml, async () => {
       await installAndWaitForQuest(harness, { lat: 52.375, lon: 4.895 });
 
@@ -192,6 +190,8 @@ test('interaction map: non-arrived flows (mocked OSM)', { concurrency: 1 }, asyn
       });
 
       await t.test('map zoom in/out', { concurrency: 1 }, async () => {
+        const result = await harness.assertScreenshot("map-screen");
+        assert.ok(result.match);
         // Zoom in (UP button)
         await harness.click('up');
         await harness.delay(250);
@@ -260,7 +260,7 @@ test('loading screen with retry (mocked OSM)', { concurrency: 1 }, async (t) => 
   const osmXml = makeOsmXmlWithWheelchairQuest();
 
   try {
-    await harness.cleanArtifacts();
+
     await harness.withMockedOsm(osmXml, async () => {
       // Add a delay to the mock server so the loading screen is visible
       harness.setMockOsmDelay(5000);

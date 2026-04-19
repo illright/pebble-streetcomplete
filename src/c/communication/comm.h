@@ -8,3 +8,4 @@ void comm_send_comment(const char *comment_text);
 void comm_send_skip(uint8_t skip_type);
 void comm_send_dismiss(void);
 void comm_send_retry_fetch(void);
+void comm_remove_quest_ui(void);

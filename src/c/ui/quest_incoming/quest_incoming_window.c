@@ -244,6 +244,7 @@ static void window_unload(Window *window) {
 #endif
   layer_destroy(s_app->incoming_arrow_layer);
   s_app->incoming_arrow_layer = NULL;
+  s_app->incoming_window = NULL;
 }
 
 void quest_incoming_window_push(AppState *app) {

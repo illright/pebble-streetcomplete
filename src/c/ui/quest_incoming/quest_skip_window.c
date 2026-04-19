@@ -35,6 +35,7 @@ static void menu_select(MenuLayer *menu_layer, MenuIndex *index, void *ctx) {
 }
 
 static void window_load(Window *window) {
+  s_app->skip_window = window;
   Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
@@ -56,6 +57,7 @@ static void window_load(Window *window) {
 
 static void window_unload(Window *window) {
   (void)window;
+  s_app->skip_window = NULL;
   layer_destroy(s_breadcrumbs);
   s_breadcrumbs = NULL;
   menu_layer_destroy(s_app->skip_menu_layer);

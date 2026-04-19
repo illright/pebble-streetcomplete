@@ -10,6 +10,24 @@
 static AppState *s_app;
 static bool s_map_data_receiving;
 
+/** Removes a window from the stack and destroys it if its handle is set.
+ *  The window_unload callback must set the handle to NULL. */
+static void remove_and_destroy(Window **handle) {
+  if (*handle) {
+    Window *w = *handle;
+    window_stack_remove(w, false);
+    window_destroy(w);
+  }
+}
+
+/** Tears down any quest UI windows still on the stack from a previous quest.
+ *  Safe to call even when none of the windows are present. */
+void comm_remove_quest_ui(void) {
+  remove_and_destroy(&s_app->skip_window);
+  remove_and_destroy(&s_app->actions_window);
+  remove_and_destroy(&s_app->incoming_window);
+}
+
 /** Sends the user's answer for the active quest to the phone over AppMessage. */
 void comm_send_answer(const char *answer_value) {
   Quest *q = &s_app->active_quest;
@@ -179,6 +197,11 @@ static void handle_new_quest(DictionaryIterator *iter) {
 
   /* Remove the loading screen before showing the quest. */
   loading_window_remove(s_app);
+
+  /* If a previous quest's UI is still on the stack (e.g. a skip was in
+   * progress and the deferred cleanup hasn't run yet), tear it down first
+   * so we don't end up with orphaned windows. */
+  comm_remove_quest_ui();
 
   /* Nudge the user so they know a quest has arrived. */
   static const uint32_t vibe_segments[] = { 50, 100, 50 };

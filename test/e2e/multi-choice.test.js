@@ -63,7 +63,7 @@ test('multi-choice quest: arrived flow (mocked OSM)', { concurrency: 1 }, async 
   const osmXml = makeOsmXmlWithRailwayCrossingQuest();
 
   try {
-    await harness.cleanArtifacts();
+
     await harness.withMockedOsm(osmXml, async () => {
       await harness.withArrivalThreshold(1500, async () => {
         await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
@@ -98,7 +98,7 @@ test('multi-choice quest: visual verification (mocked OSM)', { concurrency: 1 },
   const osmXml = makeOsmXmlWithRailwayCrossingQuest();
 
   try {
-    await harness.cleanArtifacts();
+
     await harness.withMockedOsm(osmXml, async () => {
       await harness.withArrivalThreshold(1500, async () => {
         await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });
@@ -123,7 +123,7 @@ test('multi-choice quest: map view (mocked OSM)', { concurrency: 1 }, async (t) 
   const osmXml = makeOsmXmlWithRailwayCrossingQuest();
 
   try {
-    await harness.cleanArtifacts();
+
     await harness.withMockedOsm(osmXml, async () => {
       await harness.withArrivalThreshold(1500, async () => {
         await installAndWaitForQuest(harness, { lat: 52.373500, lon: 4.892700 });

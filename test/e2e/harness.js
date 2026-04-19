@@ -291,6 +291,7 @@ class PebbleHarness {
         await this.run('pebble', args, { timeoutMs: 60000 });
         this._isInstalled = true;
         this._installedEnv = currentEnv;
+        await this.setTime('12:00:00');
         return;
       } catch (err) {
         lastError = err;
@@ -318,6 +319,12 @@ class PebbleHarness {
   // location-based flows without waiting for real GPS or using time delays.
   async setLocation(latitude, longitude) {
     const args = this.pebbleArgs(['emu-set-location', '--emulator', this.platform, '--latitude', String(latitude), '--longitude', String(longitude)]);
+    await this.run('pebble', args, { timeoutMs: 15000 });
+  }
+
+  // Pin the emulator clock so the statusbar time is deterministic across runs.
+  async setTime(timeStr) {
+    const args = this.pebbleArgs(['emu-set-time', '--emulator', this.platform, timeStr]);
     await this.run('pebble', args, { timeoutMs: 15000 });
   }
 

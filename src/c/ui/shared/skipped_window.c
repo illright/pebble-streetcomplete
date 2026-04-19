@@ -1,4 +1,5 @@
 #include "skipped_window.h"
+#include "../../communication/comm.h"
 
 static AppState *s_app;
 static TextLayer *s_label;
@@ -39,14 +40,16 @@ static void window_unload(Window *window) {
 void skipped_window_push(AppState *app) {
   s_app = app;
 
-  s_app->has_active_quest = false;
-  s_app->arrived_at_quest = false;
+  /* If handle_new_quest already ran (race: new quest arrived before this
+   * deferred callback), the old windows are already gone — don't clear the
+   * quest state that the new quest just set. */
+  bool new_quest_arrived = !s_app->skip_window && !s_app->actions_window;
 
-  /* Pop the quest UI windows to get back to the main screen before showing
-   * the confirmation.  Three pops: skip → actions → incoming. */
-  window_stack_pop(false);  /* skip window   */
-  window_stack_pop(false);  /* actions window */
-  window_stack_pop(false);  /* incoming quest */
+  if (!new_quest_arrived) {
+    s_app->has_active_quest = false;
+    s_app->arrived_at_quest = false;
+    comm_remove_quest_ui();
+  }
 
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){

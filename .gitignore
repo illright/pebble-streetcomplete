@@ -9,3 +9,4 @@ test/artifacts
 
 # Only during rapid development
 test/baselines
+.DS_Store
